@@ -1,11 +1,14 @@
 use std::time::Duration;
 
-use chrono::Local;
 use reqwest::Client;
 
 use tracing_subscriber::{EnvFilter, fmt, prelude::*};
 
-use crate::{DynResult, check::check_connection, runner::run_loop};
+use crate::{
+    DynResult,
+    check::{Connectivity, check_connection},
+    runner::run_loop,
+};
 
 pub async fn run() -> DynResult<()> {
     let file_appender = tracing_appender::rolling::daily("./logs", "internet_check.log");
@@ -27,11 +30,10 @@ pub async fn run() -> DynResult<()> {
         .init();
 
     run_loop(
-        Duration::from_secs(10),
-        do_it,
-        // None::<fn() -> Ready<DynResult<()>>>,
+        Duration::from_secs(2),
+        observe_connection,
         Some(async || {
-            log("Fertsch!");
+            tracing::info!("Finished internet connection observation");
 
             Ok(())
         }),
@@ -41,37 +43,26 @@ pub async fn run() -> DynResult<()> {
     Ok(())
 }
 
-async fn do_it(client: Client) -> DynResult<()> {
-    println!("i do it now");
-
-    // log("Looos gehts");
+async fn observe_connection(client: Client, previous: Option<Connectivity>) -> Connectivity {
     let result = check_connection(client.clone(), None).await;
 
-    // log(format!("{:#?}", result));
-
-    // tracing::info!(result = serde_json::to_string(&result)?);
-    tracing::info!(foo = serde_json::to_string(&result)?);
-
-    // let test_asd = serde_json::to_string(&result)?;
-    // println!("{test_asd}");
-
-    if !result.is_internet_up() {
-        tracing::warn!("Internet ist DOWN!");
+    match (previous, result.connectivity()) {
+        (None, connectivity) => match connectivity {
+            Connectivity::Online => {
+                tracing::info!(?result, "Started - Internet available")
+            }
+            Connectivity::Offline => {
+                tracing::warn!(?result, "Started - Internet unavailable")
+            }
+        },
+        (Some(_), Connectivity::Offline) => {
+            tracing::warn!(?result, "Internet unavailable")
+        }
+        (Some(Connectivity::Offline), Connectivity::Online) => {
+            tracing::info!(?result, "Internet restored")
+        }
+        _ => {}
     }
 
-    log("done!");
-
-    Ok(())
-}
-
-fn log<S: AsRef<str>>(message: S) {
-    println!("{}", msg(message))
-}
-
-fn msg<S: AsRef<str>>(message: S) -> String {
-    format!(
-        "[{}]: {}",
-        Local::now().format("%H:%M:%S").to_string(),
-        message.as_ref()
-    )
+    result.connectivity()
 }

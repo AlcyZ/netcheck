@@ -5,8 +5,6 @@ use std::{
 
 use reqwest::{Client, StatusCode};
 
-use crate::DynResult;
-
 use serde::{Serialize, Serializer};
 
 fn serialize_status_code<S>(status: &StatusCode, serializer: S) -> Result<S::Ok, S::Error>
@@ -127,9 +125,25 @@ impl TargetResult {
     }
 }
 
+#[derive(Serialize, Debug, Clone, Copy)]
+pub enum Connectivity {
+    Online,
+    Offline,
+}
+
+impl From<bool> for Connectivity {
+    fn from(value: bool) -> Self {
+        if value {
+            Connectivity::Online
+        } else {
+            Connectivity::Offline
+        }
+    }
+}
+
 #[derive(Serialize, Debug)]
 pub struct InternetCheckResult {
-    internet_up: bool,
+    connectivity: Connectivity,
     speed: LatencySpeed,
     results: Vec<TargetResult>,
     avg: Duration,
@@ -137,21 +151,21 @@ pub struct InternetCheckResult {
 
 impl InternetCheckResult {
     fn new(
-        internet_up: bool,
+        connectivity: Connectivity,
         speed: LatencySpeed,
         results: Vec<TargetResult>,
         avg: Duration,
     ) -> InternetCheckResult {
         InternetCheckResult {
-            internet_up,
+            connectivity,
             speed,
             results,
             avg,
         }
     }
 
-    pub fn is_internet_up(&self) -> bool {
-        self.internet_up
+    pub fn connectivity(&self) -> Connectivity {
+        self.connectivity
     }
 }
 
@@ -170,7 +184,7 @@ pub async fn check_connection(
     let speed = LatencySpeed::new(results.iter().collect(), Some(100));
     let avg = avg_durations(results.iter().map(|r| r.latency.get_duration()).collect());
 
-    InternetCheckResult::new(internet_up, speed, results, avg)
+    InternetCheckResult::new(internet_up.into(), speed, results, avg)
 }
 
 async fn check_target(
@@ -219,16 +233,6 @@ fn get_endpoint(target: &CheckTarget) -> String {
     }
 }
 
-fn get_client(timeout: Option<u64>) -> DynResult<Client> {
-    let timeout_duration = timeout.unwrap_or(5);
-
-    let client = Client::builder()
-        .timeout(Duration::from_secs(timeout_duration))
-        .build()?;
-
-    Ok(client)
-}
-
 fn avg_durations(durations: Vec<&Duration>) -> Duration {
     if durations.is_empty() {
         return Duration::ZERO;
@@ -243,6 +247,13 @@ fn classify_reqwest_error(err: reqwest::Error) -> CheckError {
         return CheckError::Timeout;
     }
 
+    if err.is_builder()
+        || err.to_string().to_lowercase().contains("tls")
+        || err.to_string().to_lowercase().contains("certificate")
+    {
+        return CheckError::TlsError;
+    }
+
     if err.is_connect() {
         if let Some(source) = err.source() {
             let msg = source.to_string().to_lowercase();
@@ -253,6 +264,10 @@ fn classify_reqwest_error(err: reqwest::Error) -> CheckError {
 
             if msg.contains("refused") {
                 return CheckError::ConnectionRefused;
+            }
+
+            if msg.contains("ssl") || msg.contains("tls") || msg.contains("certificate") {
+                return CheckError::TlsError;
             }
         }
 
