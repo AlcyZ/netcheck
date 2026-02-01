@@ -53,7 +53,7 @@ enum LatencySpeed {
 }
 
 impl LatencySpeed {
-    fn new(results: Vec<&TargetResult>, latency_threshold: Option<usize>) -> LatencySpeed {
+    fn new(results: &[&TargetResult], latency_threshold: Option<usize>) -> LatencySpeed {
         if results.is_empty() {
             return LatencySpeed::Ok;
         }
@@ -181,8 +181,9 @@ pub async fn check_connection(
     let results = vec![google, example, ip];
 
     let internet_up = results.iter().any(|r| r.success);
-    let speed = LatencySpeed::new(results.iter().collect(), Some(100));
-    let avg = avg_durations(results.iter().map(|r| r.latency.get_duration()).collect());
+
+    let speed = LatencySpeed::new(&results.iter().collect::<Vec<_>>(), None);
+    let avg = avg_durations(results.iter().map(|r| r.latency.duration));
 
     InternetCheckResult::new(internet_up.into(), speed, results, avg)
 }
@@ -233,13 +234,20 @@ fn get_endpoint(target: &CheckTarget) -> String {
     }
 }
 
-fn avg_durations(durations: Vec<&Duration>) -> Duration {
-    if durations.is_empty() {
+fn avg_durations(durations: impl Iterator<Item = Duration>) -> Duration {
+    let mut total = Duration::ZERO;
+    let mut count = 0u32;
+
+    for d in durations {
+        total += d;
+        count += 1;
+    }
+
+    if count == 0 {
         return Duration::ZERO;
     }
 
-    let sum: Duration = durations.iter().copied().sum();
-    sum / durations.len() as u32
+    total / count
 }
 
 fn classify_reqwest_error(err: reqwest::Error) -> CheckError {
@@ -274,10 +282,10 @@ fn classify_reqwest_error(err: reqwest::Error) -> CheckError {
         return CheckError::ConnectionRefused;
     }
 
-    if err.is_status() {
-        if let Some(status) = err.status() {
-            return CheckError::HttpStatus(status);
-        }
+    if err.is_status()
+        && let Some(status) = err.status()
+    {
+        return CheckError::HttpStatus(status);
     }
 
     if err.is_request() {

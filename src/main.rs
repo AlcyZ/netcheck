@@ -1,3 +1,7 @@
+#![warn(clippy::all)]
+#![warn(clippy::perf)]
+#![warn(clippy::style)]
+
 use tokio::runtime::Builder;
 
 mod check;
