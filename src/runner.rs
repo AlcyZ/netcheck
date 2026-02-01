@@ -4,7 +4,7 @@ use reqwest::Client;
 
 use crate::DynResult;
 
-pub async fn run_loop<Cb, FutCb, Shutdown, FutShutdown, Previous>(
+pub async fn run_loop<Cb, FutCb, Shutdown, FutShutdown>(
     duration: Duration,
     cb: Cb,
     shutdown: Option<Shutdown>,
