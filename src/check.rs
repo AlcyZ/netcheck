@@ -274,11 +274,10 @@ fn classify_reqwest_error(err: reqwest::Error) -> CheckError {
         return CheckError::ConnectionRefused;
     }
 
-    if err.is_status() {
-        if let Some(status) = err.status() {
+    if err.is_status()
+        && let Some(status) = err.status() {
             return CheckError::HttpStatus(status);
         }
-    }
 
     if err.is_request() {
         return CheckError::InvalidRequest;
