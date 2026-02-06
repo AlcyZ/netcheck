@@ -10,6 +10,38 @@ use serde::Serialize;
 
 use crate::DynResult;
 
+#[macro_export]
+macro_rules! log {
+    ($logger:expr, $msg:expr, $($key:ident = $val:expr),* $(,)?) => {
+        {
+            let logger_ref = $crate::log::ensure_logger(&$logger);
+
+            let data = serde_json::json!({
+                "timestamp": chrono::Utc::now(),
+                "message": $msg,
+                 $(
+                     stringify!($key): $val,
+                 )*
+            });
+
+            logger_ref.log(data)
+        }
+    };
+
+    ($logger:expr, $msg:expr $(,)?) => {
+        {
+            let logger_ref = $crate::log::ensure_logger(&$logger);
+
+            let data = serde_json::json!({
+                "timestamp": chrono::Utc::now(),
+                "message": $msg,
+            });
+
+            logger_ref.log(data)
+        }
+    };
+}
+
 pub struct Logger {
     dir: PathBuf,
     file_prefix: String,
@@ -178,4 +210,9 @@ struct LoggerState {
     file: File,
     path: PathBuf,
     current_size: u64,
+}
+
+#[doc(hidden)]
+pub fn ensure_logger(logger: &Logger) -> &Logger {
+    logger
 }
