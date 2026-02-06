@@ -46,7 +46,7 @@ pub struct Logger {
     mode: LogMode,
 }
 
-enum LogMode {
+pub enum LogMode {
     Silent,
     Stdout,
     File,

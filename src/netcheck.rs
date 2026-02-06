@@ -5,12 +5,13 @@ use reqwest::Client;
 use crate::{
     DynResult,
     check::{Connectivity, check_connection},
-    log::Logger,
+    log::{LogMode, Logger},
     runner::run_loop,
 };
 
 pub async fn run() -> DynResult<()> {
-    let logger = Arc::new(Logger::builder().build());
+    let logger = Logger::builder().with_mode(LogMode::File).build();
+    let logger = Arc::new(logger);
 
     run_loop(
         Arc::clone(&logger),
