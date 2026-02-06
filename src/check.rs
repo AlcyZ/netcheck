@@ -3,6 +3,7 @@ use std::{
     time::{Duration, Instant},
 };
 
+use chrono::{DateTime, Utc};
 use reqwest::{Client, StatusCode};
 
 use serde::{Serialize, Serializer};
@@ -27,14 +28,14 @@ where
     }
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Debug, Clone)]
 enum CheckTarget {
     Google,
     Example,
     IP,
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Debug, Clone)]
 enum CheckError {
     Timeout,
     DnsFailure,
@@ -46,7 +47,7 @@ enum CheckError {
     InvalidRequest,
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Debug, Clone)]
 enum LatencySpeed {
     Slow,
     Ok,
@@ -73,7 +74,7 @@ impl LatencySpeed {
     }
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Debug, Clone)]
 struct Latency {
     duration: Duration,
     speed: LatencySpeed,
@@ -97,7 +98,7 @@ impl Latency {
     }
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Debug, Clone)]
 struct TargetResult {
     target: CheckTarget,
     success: bool,
@@ -141,8 +142,9 @@ impl From<bool> for Connectivity {
     }
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Debug, Clone)]
 pub struct InternetCheckResult {
+    timestamp: DateTime<Utc>,
     connectivity: Connectivity,
     speed: LatencySpeed,
     results: Vec<TargetResult>,
@@ -157,6 +159,7 @@ impl InternetCheckResult {
         avg: Duration,
     ) -> InternetCheckResult {
         InternetCheckResult {
+            timestamp: Utc::now(),
             connectivity,
             speed,
             results,
