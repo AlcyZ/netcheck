@@ -2,8 +2,10 @@
 #![warn(clippy::perf)]
 #![warn(clippy::style)]
 
+use clap::Parser;
 use tokio::runtime::Builder;
 
+mod app;
 mod check;
 #[macro_use]
 mod log;
@@ -15,7 +17,8 @@ type DynResult<T> = Result<T, Box<dyn std::error::Error>>;
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let rt = Builder::new_current_thread().enable_all().build()?;
 
-    rt.block_on(netcheck::run())?;
+    let args = app::Args::parse();
+    rt.block_on(netcheck::run(args))?;
 
     Ok(())
 }

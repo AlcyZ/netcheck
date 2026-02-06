@@ -5,6 +5,7 @@ use reqwest::Client;
 use crate::{DynResult, check::Connectivity, log::Logger};
 
 pub async fn run_loop<Cb, FutCb, Shutdown, FutShutdown>(
+    client: Client,
     logger: Arc<Logger>,
     duration: Duration,
     cb: Cb,
@@ -16,10 +17,9 @@ where
     Shutdown: FnOnce() -> FutShutdown,
     FutShutdown: Future<Output = DynResult<()>>,
 {
-    let mut previous = None::<Connectivity>;
-    let client = Client::builder().timeout(Duration::from_secs(5)).build()?;
-
     println!("Press CTRL-C to abort...");
+
+    let mut previous = None::<Connectivity>;
     previous = Some(cb(client.clone(), Arc::clone(&logger), previous).await?);
 
     loop {

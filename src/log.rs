@@ -6,6 +6,7 @@ use std::{
 };
 
 use chrono::Local;
+use clap::ValueEnum;
 use serde::Serialize;
 
 use crate::DynResult;
@@ -25,6 +26,15 @@ macro_rules! log {
             logger_ref.log(data)
         }
     };
+
+    ($logger:expr, $msg:expr $(,)?) => {{
+        let logger_ref = $crate::log::ensure_logger(&$logger);
+        let data = serde_json::json!({
+            "timestamp": chrono::Utc::now(),
+            "message": $msg,
+        });
+        logger_ref.log(data)
+    }};
 }
 
 #[macro_export]
@@ -38,6 +48,11 @@ macro_rules! log_val {
     };
 }
 
+pub const DEFAULT_LOG_DIR: &str = "./logs";
+pub const DEFAULT_FILE_PREFIX: &str = "netcheck";
+pub const DEFAULT_MAX_SIZE: u64 = 2 * 1024 * 1024;
+pub const DEFAULT_LOG_MODE: LogMode = LogMode::Stdout;
+
 pub struct Logger {
     dir: PathBuf,
     file_prefix: String,
@@ -46,6 +61,7 @@ pub struct Logger {
     mode: LogMode,
 }
 
+#[derive(ValueEnum, Debug, Clone)]
 pub enum LogMode {
     Silent,
     Stdout,
@@ -186,11 +202,11 @@ impl LoggerBuilder {
     }
 
     pub fn build(self) -> Logger {
-        let dir = self.dir.unwrap_or("./logs".into());
-        let file_prefix = self.file_prefix.unwrap_or("netcheck".into());
-        let max_size = self.max_size.unwrap_or(2 * 1024 * 1024); // 2megabytes
+        let dir = self.dir.unwrap_or(DEFAULT_LOG_DIR.into());
+        let file_prefix = self.file_prefix.unwrap_or(DEFAULT_FILE_PREFIX.into());
+        let max_size = self.max_size.unwrap_or(DEFAULT_MAX_SIZE);
         let state = Mutex::new(None);
-        let mode = self.mode.unwrap_or(LogMode::All);
+        let mode = self.mode.unwrap_or(DEFAULT_LOG_MODE);
 
         Logger {
             dir,
