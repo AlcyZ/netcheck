@@ -35,21 +35,14 @@ async fn observe_connection(
 ) -> DynResult<Connectivity> {
     let result = check_connection(client.clone(), None).await;
 
-    // logger.log(&result)?;
     match (previous, result.connectivity()) {
         (None, connectivity) => match connectivity {
-            Connectivity::Online => {
-                // tracing::info!(?result, "Started - Internet available")
-            }
-            Connectivity::Offline => {
-                // tracing::warn!(?result, "Started - Internet unavailable")
-            }
+            Connectivity::Online => log!(logger, "Started - Internet available", result)?,
+            Connectivity::Offline => log!(logger, "Started - Internet unavailable", result)?,
         },
-        (Some(_), Connectivity::Offline) => {
-            // tracing::warn!(?result, "Internet unavailable")
-        }
+        (Some(_), Connectivity::Offline) => log!(logger, "Internet unavailable", result)?,
         (Some(Connectivity::Offline), Connectivity::Online) => {
-            // tracing::info!(?result, "Internet restored")
+            log!(logger, "Internet restored", result)?
         }
         _ => {}
     }

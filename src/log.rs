@@ -12,33 +12,29 @@ use crate::DynResult;
 
 #[macro_export]
 macro_rules! log {
-    ($logger:expr, $msg:expr, $($key:ident = $val:expr),* $(,)?) => {
+    ($logger:expr, $msg:expr, $($key:ident $(= $val:expr)? ),* $(,)?) => {
         {
             let logger_ref = $crate::log::ensure_logger(&$logger);
-
             let data = serde_json::json!({
                 "timestamp": chrono::Utc::now(),
                 "message": $msg,
-                 $(
-                     stringify!($key): $val,
-                 )*
+                $(
+                    stringify!($key): $crate::log_val!($key $(, $val)?)
+                ),*
             });
-
             logger_ref.log(data)
         }
     };
+}
 
-    ($logger:expr, $msg:expr $(,)?) => {
-        {
-            let logger_ref = $crate::log::ensure_logger(&$logger);
-
-            let data = serde_json::json!({
-                "timestamp": chrono::Utc::now(),
-                "message": $msg,
-            });
-
-            logger_ref.log(data)
-        }
+#[macro_export]
+#[doc(hidden)]
+macro_rules! log_val {
+    ($key:ident) => {
+        $key
+    };
+    ($key:ident, $val:expr) => {
+        $val
     };
 }
 
