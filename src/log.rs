@@ -1,6 +1,6 @@
 use std::{
     fs::{File, OpenOptions, metadata},
-    io::{BufWriter, Write},
+    io::Write,
     path::{Path, PathBuf},
     sync::Mutex,
 };
@@ -15,6 +15,14 @@ pub struct Logger {
     file_prefix: String,
     max_size: u64,
     state: Mutex<Option<LoggerState>>,
+    mode: LogMode,
+}
+
+enum LogMode {
+    Silent,
+    Stdout,
+    File,
+    All,
 }
 
 impl Logger {
@@ -22,7 +30,30 @@ impl Logger {
         LoggerBuilder::default()
     }
 
-    pub fn log(&self, data: impl Serialize) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn log(&self, data: impl Serialize) -> DynResult<()> {
+        match self.mode {
+            LogMode::Stdout => self.log_stdout(&data),
+            LogMode::File => self.log_file(&data),
+            LogMode::All => self.log_all(&data),
+            LogMode::Silent => Ok(()),
+        }
+    }
+
+    fn log_all(&self, data: impl Serialize) -> DynResult<()> {
+        self.log_file(&data)?;
+        self.log_stdout(&data)?;
+
+        Ok(())
+    }
+
+    fn log_stdout(&self, data: impl Serialize) -> DynResult<()> {
+        let content = serde_json::to_string_pretty(&data)?;
+        println!("{content}");
+
+        Ok(())
+    }
+
+    fn log_file(&self, data: impl Serialize) -> DynResult<()> {
         let target_path = self.get_current_file_path()?;
         let mut lock = self.state.lock().map_err(|_| "Mutex poisened")?;
         let needs_new_file = match &*lock {
@@ -98,6 +129,7 @@ pub struct LoggerBuilder {
     file_prefix: Option<String>,
     dir: Option<PathBuf>,
     max_size: Option<u64>,
+    mode: Option<LogMode>,
 }
 
 impl LoggerBuilder {
@@ -119,17 +151,25 @@ impl LoggerBuilder {
         self
     }
 
+    pub fn with_mode(mut self, mode: LogMode) -> Self {
+        self.mode = Some(mode);
+
+        self
+    }
+
     pub fn build(self) -> Logger {
         let dir = self.dir.unwrap_or("./logs".into());
         let file_prefix = self.file_prefix.unwrap_or("netcheck".into());
         let max_size = self.max_size.unwrap_or(2 * 1024 * 1024); // 2megabytes
         let state = Mutex::new(None);
+        let mode = self.mode.unwrap_or(LogMode::All);
 
         Logger {
             dir,
             file_prefix,
             max_size,
             state,
+            mode,
         }
     }
 }
