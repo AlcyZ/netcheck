@@ -5,6 +5,7 @@
 use tokio::runtime::Builder;
 
 mod check;
+mod log;
 mod netcheck;
 mod runner;
 
