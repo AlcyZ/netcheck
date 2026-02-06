@@ -1,39 +1,24 @@
-use std::time::Duration;
+use std::{sync::Arc, time::Duration};
 
 use reqwest::Client;
-
-use tracing_subscriber::{EnvFilter, fmt, prelude::*};
 
 use crate::{
     DynResult,
     check::{Connectivity, check_connection},
+    log::Logger,
     runner::run_loop,
 };
 
 pub async fn run() -> DynResult<()> {
-    let file_appender = tracing_appender::rolling::daily("./logs", "internet_check.log");
-
-    let filter =
-        EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("warn,netcheck=info"));
-
-    let file_layer = fmt::layer()
-        .with_writer(file_appender)
-        .with_ansi(false)
-        .json();
-
-    let stdout_layer = fmt::layer().with_ansi(true);
-
-    tracing_subscriber::registry()
-        .with(filter)
-        .with(file_layer)
-        .with(stdout_layer)
-        .init();
+    let logger = Arc::new(Logger::builder().build());
 
     run_loop(
+        Arc::clone(&logger),
         Duration::from_secs(2),
         observe_connection,
         Some(async || {
-            tracing::info!("Finished internet connection observation");
+            logger.log("i am done!")?;
+            println!("DONE!");
 
             Ok(())
         }),
@@ -43,26 +28,31 @@ pub async fn run() -> DynResult<()> {
     Ok(())
 }
 
-async fn observe_connection(client: Client, previous: Option<Connectivity>) -> Connectivity {
+async fn observe_connection(
+    client: Client,
+    logger: Arc<Logger>,
+    previous: Option<Connectivity>,
+) -> DynResult<Connectivity> {
     let result = check_connection(client.clone(), None).await;
 
+    // logger.log(&result)?;
     match (previous, result.connectivity()) {
         (None, connectivity) => match connectivity {
             Connectivity::Online => {
-                tracing::info!(?result, "Started - Internet available")
+                // tracing::info!(?result, "Started - Internet available")
             }
             Connectivity::Offline => {
-                tracing::warn!(?result, "Started - Internet unavailable")
+                // tracing::warn!(?result, "Started - Internet unavailable")
             }
         },
         (Some(_), Connectivity::Offline) => {
-            tracing::warn!(?result, "Internet unavailable")
+            // tracing::warn!(?result, "Internet unavailable")
         }
         (Some(Connectivity::Offline), Connectivity::Online) => {
-            tracing::info!(?result, "Internet restored")
+            // tracing::info!(?result, "Internet restored")
         }
         _ => {}
     }
 
-    result.connectivity()
+    Ok(result.connectivity())
 }
