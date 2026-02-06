@@ -28,8 +28,7 @@ pub async fn run(args: app::Args) -> DynResult<()> {
         Duration::from_secs(args.observer.interval),
         observe_connection,
         Some(async || {
-            logger.log("i am done!")?;
-            println!("DONE!");
+            log!(logger, "Graceful shutdown")?;
 
             Ok(())
         }),
