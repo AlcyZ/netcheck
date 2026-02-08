@@ -3,17 +3,18 @@ use std::{sync::Arc, time::Duration};
 use reqwest::Client;
 
 use crate::{
-    DynResult, app,
+    DynResult,
+    app::MonitorArgs,
     check::{Connectivity, check_connection},
     log::Logger,
     runner::run_loop,
 };
 
-pub async fn run(args: app::Args) -> DynResult<()> {
+pub async fn run(args: MonitorArgs) -> DynResult<()> {
     let logger = Logger::builder()
         .with_mode(args.logger.mode)
-        .with_dir(args.logger.dir)
-        .with_file_prefix(args.logger.filename)
+        .with_dir(args.logger.location.dir)
+        .with_file_prefix(args.logger.location.filename)
         .with_max_size(args.logger.size)
         .build();
     let logger = Arc::new(logger);
