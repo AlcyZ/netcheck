@@ -1,18 +1,29 @@
 use std::{
     error::Error,
+    fmt::Display,
     time::{Duration, Instant},
 };
 
 use chrono::{DateTime, Utc};
 use reqwest::{Client, StatusCode};
 
-use serde::{Serialize, Serializer};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 fn serialize_status_code<S>(status: &StatusCode, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
     serializer.serialize_u16(status.as_u16())
+}
+
+fn deserialize_status_code<'de, D>(deserializer: D) -> Result<StatusCode, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let s: u16 = Deserialize::deserialize(deserializer)?;
+    println!("DBGBDBG HELPO: {s}");
+
+    Ok(StatusCode::NOT_EXTENDED)
 }
 
 fn serialize_option_status_code<S>(
@@ -28,26 +39,36 @@ where
     }
 }
 
-#[derive(Serialize, Debug, Clone)]
+fn deserialize_option_status_code<'de, D>(_deserializer: D) -> Result<Option<StatusCode>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    Ok(None)
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 enum CheckTarget {
     Google,
     Example,
     IP,
 }
 
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 enum CheckError {
     Timeout,
     DnsFailure,
     ConnectionRefused,
     TlsError,
-    #[serde(serialize_with = "serialize_status_code")]
+    #[serde(
+        serialize_with = "serialize_status_code",
+        deserialize_with = "deserialize_status_code"
+    )]
     HttpStatus(StatusCode),
     Other(String),
     InvalidRequest,
 }
 
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 enum LatencySpeed {
     Slow,
     Ok,
@@ -74,7 +95,7 @@ impl LatencySpeed {
     }
 }
 
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 struct Latency {
     duration: Duration,
     speed: LatencySpeed,
@@ -98,12 +119,15 @@ impl Latency {
     }
 }
 
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 struct TargetResult {
     target: CheckTarget,
     success: bool,
     latency: Latency,
-    #[serde(serialize_with = "serialize_option_status_code")]
+    #[serde(
+        serialize_with = "serialize_option_status_code",
+        deserialize_with = "deserialize_option_status_code"
+    )]
     status_code: Option<StatusCode>,
     error: Option<CheckError>,
 }
@@ -126,7 +150,7 @@ impl TargetResult {
     }
 }
 
-#[derive(Serialize, Debug, Clone, Copy)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
 pub enum Connectivity {
     Online,
     Offline,
@@ -142,7 +166,16 @@ impl From<bool> for Connectivity {
     }
 }
 
-#[derive(Serialize, Debug, Clone)]
+impl Display for Connectivity {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Connectivity::Online => write!(f, "Online"),
+            Connectivity::Offline => write!(f, "Offline"),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct InternetCheckResult {
     timestamp: DateTime<Utc>,
     connectivity: Connectivity,
@@ -169,6 +202,10 @@ impl InternetCheckResult {
 
     pub fn connectivity(&self) -> Connectivity {
         self.connectivity
+    }
+
+    pub fn get_time(&self) -> String {
+        self.timestamp.format("%d.%m.%y - %H:%M").to_string()
     }
 }
 
