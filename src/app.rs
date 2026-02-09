@@ -1,16 +1,14 @@
-use std::{
-    fs::{File, read_dir},
-    path::{Path, PathBuf},
-};
+use std::path::PathBuf;
 
-use clap::{Args, Parser, Subcommand};
-use regex::Regex;
+use clap::{Args, Parser, Subcommand, ValueEnum};
 
 use crate::{
     DynResult,
     log::{DEFAULT_FILE_PREFIX, DEFAULT_LOG_DIR, DEFAULT_LOG_MODE, DEFAULT_MAX_SIZE, LogMode},
     monitor, report,
 };
+
+pub const DEFAULT_REPORT_MODE: ReportMode = ReportMode::Simple;
 
 #[derive(Parser, Debug)]
 #[command(version, about = "Network Monitor & Analyzer")]
@@ -77,4 +75,13 @@ pub struct ObserverArgs {
 pub struct ReportArgs {
     #[command(flatten)]
     pub location: LoggerLocationArgs,
+
+    /// Defines reporting mode. Simple just prints a list of times with connectivity status.
+    #[arg(short, long, value_enum, default_value_t = DEFAULT_REPORT_MODE)]
+    pub mode: ReportMode,
+}
+
+#[derive(ValueEnum, Debug, Clone)]
+pub enum ReportMode {
+    Simple,
 }
