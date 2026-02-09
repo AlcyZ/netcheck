@@ -5,46 +5,9 @@ use std::{
 };
 
 use chrono::{DateTime, Utc};
-use reqwest::{Client, StatusCode};
+use reqwest::Client;
 
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
-
-fn serialize_status_code<S>(status: &StatusCode, serializer: S) -> Result<S::Ok, S::Error>
-where
-    S: Serializer,
-{
-    serializer.serialize_u16(status.as_u16())
-}
-
-fn deserialize_status_code<'de, D>(deserializer: D) -> Result<StatusCode, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let s: u16 = Deserialize::deserialize(deserializer)?;
-    println!("DBGBDBG HELPO: {s}");
-
-    Ok(StatusCode::NOT_EXTENDED)
-}
-
-fn serialize_option_status_code<S>(
-    opt: &Option<StatusCode>,
-    serializer: S,
-) -> Result<S::Ok, S::Error>
-where
-    S: Serializer,
-{
-    match opt {
-        Some(status) => serializer.serialize_some(&status.as_u16()),
-        None => serializer.serialize_none(),
-    }
-}
-
-fn deserialize_option_status_code<'de, D>(_deserializer: D) -> Result<Option<StatusCode>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    Ok(None)
-}
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 enum CheckTarget {
@@ -59,11 +22,7 @@ enum CheckError {
     DnsFailure,
     ConnectionRefused,
     TlsError,
-    #[serde(
-        serialize_with = "serialize_status_code",
-        deserialize_with = "deserialize_status_code"
-    )]
-    HttpStatus(StatusCode),
+    HttpStatus(u16),
     Other(String),
     InvalidRequest,
 }
@@ -124,11 +83,7 @@ struct TargetResult {
     target: CheckTarget,
     success: bool,
     latency: Latency,
-    #[serde(
-        serialize_with = "serialize_option_status_code",
-        deserialize_with = "deserialize_option_status_code"
-    )]
-    status_code: Option<StatusCode>,
+    status_code: Option<u16>,
     error: Option<CheckError>,
 }
 
@@ -137,7 +92,7 @@ impl TargetResult {
         target: CheckTarget,
         success: bool,
         latency: Latency,
-        status_code: Option<StatusCode>,
+        status_code: Option<u16>,
         error: Option<CheckError>,
     ) -> TargetResult {
         TargetResult {
@@ -245,11 +200,11 @@ async fn check_target(
                 target,
                 status.is_success(),
                 Latency::from_duration(latency, latency_threshold),
-                Some(status),
+                Some(status.as_u16()),
                 if status.is_success() {
                     None
                 } else {
-                    Some(CheckError::HttpStatus(status))
+                    Some(CheckError::HttpStatus(status.as_u16()))
                 },
             )
         }
@@ -325,7 +280,7 @@ fn classify_reqwest_error(err: reqwest::Error) -> CheckError {
     if err.is_status()
         && let Some(status) = err.status()
     {
-        return CheckError::HttpStatus(status);
+        return CheckError::HttpStatus(status.as_u16());
     }
 
     if err.is_request() {
