@@ -16,9 +16,14 @@ use crate::{
 };
 
 pub async fn run(args: ReportArgs, project: Project) -> Result<()> {
+    let log_dir = match args.dir.as_deref() {
+        Some(dir) => dir,
+        None => project.log_dir(),
+    };
+
     match args.mode {
         ReportMode::Simple => {
-            let report = Report::try_from_prompt(project.log_dir())?;
+            let report = Report::try_from_prompt(log_dir)?;
             report.simple_info();
         }
     }

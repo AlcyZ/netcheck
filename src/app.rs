@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use anyhow::{Context, Result};
 use clap::{Args, Parser, Subcommand, ValueEnum};
 
@@ -93,6 +95,10 @@ pub struct ReportArgs {
     /// Defines reporting mode. Simple just prints a list of times with connectivity status.
     #[arg(short, long, value_enum, default_value_t = DEFAULT_REPORT_MODE)]
     pub mode: ReportMode,
+
+    /// (Optional) Sets log directory.
+    #[arg(short, long, value_enum)]
+    pub dir: Option<PathBuf>,
 }
 
 #[derive(ValueEnum, Debug, Clone)]
