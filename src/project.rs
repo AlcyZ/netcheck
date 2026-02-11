@@ -1,16 +1,16 @@
 use std::path::Path;
 
+use anyhow::Result;
 use directories::ProjectDirs;
-
-use crate::DynResult;
 
 pub struct Project {
     project_dirs: ProjectDirs,
 }
 
 impl Project {
-    pub fn new() -> DynResult<Self> {
-        let project_dirs = ProjectDirs::from("", "sdx", "netcheck").ok_or("damn!")?;
+    pub fn new() -> Result<Self> {
+        let project_dirs = ProjectDirs::from("", "sdx", "netcheck")
+            .ok_or(anyhow::anyhow!("Failed to create project directories"))?;
 
         Ok(Project { project_dirs })
     }

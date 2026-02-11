@@ -1,9 +1,9 @@
 use std::{sync::Arc, time::Duration};
 
+use anyhow::Result;
 use reqwest::Client;
 
 use crate::{
-    DynResult,
     app::MonitorArgs,
     check::{Connectivity, check_connection},
     log::Logger,
@@ -11,7 +11,7 @@ use crate::{
     runner::run_loop,
 };
 
-pub async fn run(args: MonitorArgs, project: Project) -> DynResult<()> {
+pub async fn run(args: MonitorArgs, project: Project) -> Result<()> {
     let logger = Logger::builder()
         .with_mode(args.logger.mode)
         .with_dir(project.log_dir())
@@ -44,7 +44,7 @@ async fn observe_connection(
     client: Client,
     logger: Arc<Logger>,
     previous: Option<Connectivity>,
-) -> DynResult<Connectivity> {
+) -> Result<Connectivity> {
     let result = check_connection(client.clone(), None).await;
 
     match (previous, result.connectivity()) {

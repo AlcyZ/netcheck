@@ -5,11 +5,10 @@ use std::{
     sync::Mutex,
 };
 
+use anyhow::Result;
 use chrono::Local;
 use clap::ValueEnum;
 use serde::Serialize;
-
-use crate::DynResult;
 
 #[macro_export]
 macro_rules! log {
@@ -73,7 +72,7 @@ impl Logger {
         LoggerBuilder::default()
     }
 
-    pub fn log(&self, data: impl Serialize) -> DynResult<()> {
+    pub fn log(&self, data: impl Serialize) -> Result<()> {
         match self.mode {
             LogMode::Stdout => self.log_stdout(&data),
             LogMode::File => self.log_file(&data),
@@ -82,23 +81,26 @@ impl Logger {
         }
     }
 
-    fn log_all(&self, data: impl Serialize) -> DynResult<()> {
+    fn log_all(&self, data: impl Serialize) -> Result<()> {
         self.log_file(&data)?;
         self.log_stdout(&data)?;
 
         Ok(())
     }
 
-    fn log_stdout(&self, data: impl Serialize) -> DynResult<()> {
+    fn log_stdout(&self, data: impl Serialize) -> Result<()> {
         let content = serde_json::to_string_pretty(&data)?;
         println!("{content}");
 
         Ok(())
     }
 
-    fn log_file(&self, data: impl Serialize) -> DynResult<()> {
+    fn log_file(&self, data: impl Serialize) -> Result<()> {
         let target_path = self.get_current_file_path()?;
-        let mut lock = self.state.lock().map_err(|_| "Mutex poisened")?;
+        let mut lock = self
+            .state
+            .lock()
+            .map_err(|_| anyhow::anyhow!("Mutex poisened"))?;
         let needs_new_file = match &*lock {
             Some(state) => state.path != target_path || state.current_size >= self.max_size,
             None => true,
@@ -137,8 +139,11 @@ impl Logger {
         Ok(())
     }
 
-    pub fn sync(&self) -> DynResult<()> {
-        let mut lock = self.state.lock().map_err(|_| "Mutex poisened")?;
+    pub fn sync(&self) -> Result<()> {
+        let mut lock = self
+            .state
+            .lock()
+            .map_err(|_| anyhow::anyhow!("Mutex poisened"))?;
         if let Some(state) = lock.as_mut() {
             state.file.sync_all()?;
         }
@@ -200,10 +205,10 @@ impl LoggerBuilder {
         self
     }
 
-    pub fn build(self) -> DynResult<Logger> {
-        let dir = self
-            .dir
-            .ok_or("Log directory is required, but was not set!")?;
+    pub fn build(self) -> Result<Logger> {
+        let dir = self.dir.ok_or(anyhow::anyhow!(
+            "Log directory is required, but was not set!"
+        ))?;
         let file_prefix = self.file_prefix.unwrap_or(DEFAULT_FILE_PREFIX.into());
         let max_size = self.max_size.unwrap_or(DEFAULT_MAX_SIZE);
         let state = Mutex::new(None);

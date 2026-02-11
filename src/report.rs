@@ -4,12 +4,13 @@ use std::{
     path::{Path, PathBuf},
 };
 
+use anyhow::Result;
 use regex::Regex;
 use serde_json::Value;
 
-use crate::{DynResult, app::ReportArgs, check::InternetCheckResult, project::Project};
+use crate::{app::ReportArgs, check::InternetCheckResult, project::Project};
 
-pub async fn run(args: ReportArgs, project: Project) -> DynResult<()> {
+pub async fn run(args: ReportArgs, project: Project) -> Result<()> {
     match args.mode {
         crate::app::ReportMode::Simple => {
             let report = SimpleReport::from_args(args, project)?;
@@ -35,7 +36,7 @@ impl SimpleReport {
 }
 
 impl SimpleReport {
-    fn from_args(args: ReportArgs, project: Project) -> DynResult<Self> {
+    fn from_args(args: ReportArgs, project: Project) -> Result<Self> {
         let files = get_matching_files(project.log_dir(), &args.filename)?;
 
         Ok(SimpleReport {
@@ -65,7 +66,7 @@ impl SimpleReport {
     }
 }
 
-fn get_matching_files<D: AsRef<Path>, P: AsRef<str>>(dir: D, prefix: P) -> DynResult<Vec<PathBuf>> {
+fn get_matching_files<D: AsRef<Path>, P: AsRef<str>>(dir: D, prefix: P) -> Result<Vec<PathBuf>> {
     if !dir.as_ref().is_dir() {
         let msg = format!(
             "'{}' - No such directory",
@@ -73,7 +74,7 @@ fn get_matching_files<D: AsRef<Path>, P: AsRef<str>>(dir: D, prefix: P) -> DynRe
                 .to_str()
                 .unwrap_or("<path contains invalid unicode>")
         );
-        return Err(msg.into());
+        anyhow::bail!(msg);
     }
 
     let pattern = format!(

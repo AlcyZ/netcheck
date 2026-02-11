@@ -1,7 +1,7 @@
+use anyhow::Result;
 use clap::{Args, Parser, Subcommand, ValueEnum};
 
 use crate::{
-    DynResult,
     log::{DEFAULT_FILE_PREFIX, DEFAULT_LOG_MODE, DEFAULT_MAX_SIZE, LogMode},
     monitor,
     project::Project,
@@ -16,14 +16,14 @@ pub struct App {
 }
 
 impl App {
-    pub fn new() -> DynResult<Self> {
+    pub fn new() -> Result<Self> {
         let cli = Cli::parse();
         let project = Project::new()?;
 
         Ok(App { cli, project })
     }
 
-    pub async fn run(self) -> DynResult<()> {
+    pub async fn run(self) -> Result<()> {
         match self.cli.command {
             Command::Monitor(args) => monitor::run(args, self.project).await,
             Command::Report(args) => report::run(args, self.project).await,
