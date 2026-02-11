@@ -104,4 +104,5 @@ pub struct ReportArgs {
 #[derive(ValueEnum, Debug, Clone)]
 pub enum ReportMode {
     Simple,
+    Outages,
 }

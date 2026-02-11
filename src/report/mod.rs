@@ -15,17 +15,19 @@ use crate::{
     project::Project,
 };
 
+mod outages;
+mod simple;
+
 pub async fn run(args: ReportArgs, project: Project) -> Result<()> {
     let log_dir = match args.dir.as_deref() {
         Some(dir) => dir,
         None => project.log_dir(),
     };
+    let report = Report::try_from_prompt(log_dir)?;
 
     match args.mode {
-        ReportMode::Simple => {
-            let report = Report::try_from_prompt(log_dir)?;
-            report.simple_info();
-        }
+        ReportMode::Simple => simple::handle(report),
+        ReportMode::Outages => outages::handle(report)?,
     }
 
     Ok(())
@@ -115,20 +117,6 @@ impl ReportItem {
 #[derive(Debug)]
 struct Report {
     items: Vec<ReportItem>,
-}
-
-impl Report {
-    fn simple_info(&self) {
-        for item in &self.items {
-            println!("Logfile: {}", item.logfile.name);
-
-            for result in &item.results {
-                let msg = format!("{}: {}", result.get_time(), result.connectivity());
-                println!("  {msg}");
-            }
-            println!();
-        }
-    }
 }
 
 impl Report {
