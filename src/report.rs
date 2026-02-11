@@ -4,7 +4,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use regex::Regex;
 use serde_json::Value;
 
@@ -37,7 +37,8 @@ impl SimpleReport {
 
 impl SimpleReport {
     fn from_args(args: ReportArgs, project: Project) -> Result<Self> {
-        let files = get_matching_files(project.log_dir(), &args.filename)?;
+        let files =
+            get_matching_files(project.log_dir(), &args.filename).context("Collecting logfiles")?;
 
         Ok(SimpleReport {
             results: SimpleReport::collect_results(&files),
@@ -69,7 +70,7 @@ impl SimpleReport {
 fn get_matching_files<D: AsRef<Path>, P: AsRef<str>>(dir: D, prefix: P) -> Result<Vec<PathBuf>> {
     if !dir.as_ref().is_dir() {
         let msg = format!(
-            "'{}' - No such directory",
+            "No logfiles found at {} - Did you started the monitor first?",
             dir.as_ref()
                 .to_str()
                 .unwrap_or("<path contains invalid unicode>")

@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use clap::{Args, Parser, Subcommand, ValueEnum};
 
 use crate::{
@@ -25,8 +25,12 @@ impl App {
 
     pub async fn run(self) -> Result<()> {
         match self.cli.command {
-            Command::Monitor(args) => monitor::run(args, self.project).await,
-            Command::Report(args) => report::run(args, self.project).await,
+            Command::Monitor(args) => monitor::run(args, self.project)
+                .await
+                .context("The monitor command failed"),
+            Command::Report(args) => report::run(args, self.project)
+                .await
+                .context("The report command failed"),
         }
     }
 }

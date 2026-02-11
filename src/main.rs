@@ -16,7 +16,22 @@ mod log;
 mod monitor;
 mod report;
 
-fn main() -> Result<()> {
+fn main() {
+    if let Err(err) = run() {
+        if cfg!(debug_assertions) {
+            eprintln!("{:?}", err);
+        } else {
+            eprintln!("Error: {}", err);
+
+            for cause in err.chain().skip(1) {
+                eprintln!("    - {}", cause);
+            }
+        }
+        std::process::exit(1);
+    }
+}
+
+fn run() -> Result<()> {
     let rt = Builder::new_current_thread().enable_all().build()?;
 
     let app = App::new()?;
