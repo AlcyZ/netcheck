@@ -90,11 +90,6 @@ pub struct ObserverArgs {
 
 #[derive(clap::Args, Debug)]
 pub struct ReportArgs {
-    /// Sets the logfile name. The logger automatically appends the timestamp and an index to log
-    /// file name.
-    #[arg(short, long, default_value = DEFAULT_FILE_PREFIX)]
-    pub filename: String,
-
     /// Defines reporting mode. Simple just prints a list of times with connectivity status.
     #[arg(short, long, value_enum, default_value_t = DEFAULT_REPORT_MODE)]
     pub mode: ReportMode,
