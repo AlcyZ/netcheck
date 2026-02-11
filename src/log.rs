@@ -48,7 +48,6 @@ macro_rules! log_val {
     };
 }
 
-pub const DEFAULT_LOG_DIR: &str = "./logs";
 pub const DEFAULT_FILE_PREFIX: &str = "netcheck";
 pub const DEFAULT_MAX_SIZE: u64 = 2 * 1024 * 1024;
 pub const DEFAULT_LOG_MODE: LogMode = LogMode::Stdout;
@@ -201,20 +200,22 @@ impl LoggerBuilder {
         self
     }
 
-    pub fn build(self) -> Logger {
-        let dir = self.dir.unwrap_or(DEFAULT_LOG_DIR.into());
+    pub fn build(self) -> DynResult<Logger> {
+        let dir = self
+            .dir
+            .ok_or("Log directory is required, but was not set!")?;
         let file_prefix = self.file_prefix.unwrap_or(DEFAULT_FILE_PREFIX.into());
         let max_size = self.max_size.unwrap_or(DEFAULT_MAX_SIZE);
         let state = Mutex::new(None);
         let mode = self.mode.unwrap_or(DEFAULT_LOG_MODE);
 
-        Logger {
+        Ok(Logger {
             dir,
             file_prefix,
             max_size,
             state,
             mode,
-        }
+        })
     }
 }
 

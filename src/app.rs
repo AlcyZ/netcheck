@@ -1,29 +1,41 @@
-use std::path::PathBuf;
-
 use clap::{Args, Parser, Subcommand, ValueEnum};
 
 use crate::{
     DynResult,
-    log::{DEFAULT_FILE_PREFIX, DEFAULT_LOG_DIR, DEFAULT_LOG_MODE, DEFAULT_MAX_SIZE, LogMode},
-    monitor, report,
+    log::{DEFAULT_FILE_PREFIX, DEFAULT_LOG_MODE, DEFAULT_MAX_SIZE, LogMode},
+    monitor,
+    project::Project,
+    report,
 };
 
 pub const DEFAULT_REPORT_MODE: ReportMode = ReportMode::Simple;
 
-#[derive(Parser, Debug)]
-#[command(version, about = "Network Monitor & Analyzer")]
 pub struct App {
-    #[command(subcommand)]
-    command: Command,
+    project: Project,
+    cli: Cli,
 }
 
 impl App {
+    pub fn new() -> DynResult<Self> {
+        let cli = Cli::parse();
+        let project = Project::new()?;
+
+        Ok(App { cli, project })
+    }
+
     pub async fn run(self) -> DynResult<()> {
-        match self.command {
-            Command::Monitor(args) => monitor::run(args).await,
-            Command::Report(args) => report::run(args).await,
+        match self.cli.command {
+            Command::Monitor(args) => monitor::run(args, self.project).await,
+            Command::Report(args) => report::run(args, self.project).await,
         }
     }
+}
+
+#[derive(Parser, Debug)]
+#[command(version, about = "Network Monitor & Analyzer")]
+struct Cli {
+    #[command(subcommand)]
+    command: Command,
 }
 
 #[derive(Subcommand, Debug)]
@@ -43,8 +55,10 @@ pub struct MonitorArgs {
 
 #[derive(clap::Args, Debug)]
 pub struct LoggerArgs {
-    #[command(flatten)]
-    pub location: LoggerLocationArgs,
+    /// Sets the logfile name. The logger automatically appends the timestamp and an index to log
+    /// file name.
+    #[arg(short, long, default_value = DEFAULT_FILE_PREFIX)]
+    pub filename: String,
 
     #[arg(short, long, default_value_t = DEFAULT_MAX_SIZE)]
     pub size: u64,
@@ -55,9 +69,8 @@ pub struct LoggerArgs {
 
 #[derive(clap::Args, Debug)]
 pub struct LoggerLocationArgs {
-    #[arg(short, long, default_value = DEFAULT_LOG_DIR)]
-    pub dir: PathBuf,
-
+    /// Sets the logfile name. The logger automatically appends the timestamp and an index to log
+    /// file name.
     #[arg(short, long, default_value = DEFAULT_FILE_PREFIX)]
     pub filename: String,
 }
@@ -73,8 +86,10 @@ pub struct ObserverArgs {
 
 #[derive(clap::Args, Debug)]
 pub struct ReportArgs {
-    #[command(flatten)]
-    pub location: LoggerLocationArgs,
+    /// Sets the logfile name. The logger automatically appends the timestamp and an index to log
+    /// file name.
+    #[arg(short, long, default_value = DEFAULT_FILE_PREFIX)]
+    pub filename: String,
 
     /// Defines reporting mode. Simple just prints a list of times with connectivity status.
     #[arg(short, long, value_enum, default_value_t = DEFAULT_REPORT_MODE)]

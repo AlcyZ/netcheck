@@ -7,12 +7,12 @@ use std::{
 use regex::Regex;
 use serde_json::Value;
 
-use crate::{DynResult, app::ReportArgs, check::InternetCheckResult};
+use crate::{DynResult, app::ReportArgs, check::InternetCheckResult, project::Project};
 
-pub async fn run(args: ReportArgs) -> DynResult<()> {
+pub async fn run(args: ReportArgs, project: Project) -> DynResult<()> {
     match args.mode {
         crate::app::ReportMode::Simple => {
-            let report = SimpleReport::from_args(args)?;
+            let report = SimpleReport::from_args(args, project)?;
             report.simple_info();
         }
     }
@@ -35,8 +35,8 @@ impl SimpleReport {
 }
 
 impl SimpleReport {
-    fn from_args(args: ReportArgs) -> DynResult<Self> {
-        let files = get_matching_files(&args.location.dir, &args.location.filename)?;
+    fn from_args(args: ReportArgs, project: Project) -> DynResult<Self> {
+        let files = get_matching_files(project.log_dir(), &args.filename)?;
 
         Ok(SimpleReport {
             results: SimpleReport::collect_results(&files),

@@ -7,16 +7,17 @@ use crate::{
     app::MonitorArgs,
     check::{Connectivity, check_connection},
     log::Logger,
+    project::Project,
     runner::run_loop,
 };
 
-pub async fn run(args: MonitorArgs) -> DynResult<()> {
+pub async fn run(args: MonitorArgs, project: Project) -> DynResult<()> {
     let logger = Logger::builder()
         .with_mode(args.logger.mode)
-        .with_dir(args.logger.location.dir)
-        .with_file_prefix(args.logger.location.filename)
+        .with_dir(project.log_dir())
+        .with_file_prefix(args.logger.filename)
         .with_max_size(args.logger.size)
-        .build();
+        .build()?;
     let logger = Arc::new(logger);
 
     let client = Client::builder()
