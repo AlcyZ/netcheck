@@ -15,6 +15,7 @@ use crate::{
     project::Project,
 };
 
+mod cleanup;
 mod outages;
 mod simple;
 
@@ -27,7 +28,8 @@ pub async fn run(args: ReportArgs, project: Project) -> Result<()> {
 
     match args.mode {
         ReportMode::Simple => simple::handle(report),
-        ReportMode::Outages => outages::handle(report)?,
+        ReportMode::Outages => outages::handle(report),
+        ReportMode::Cleanup => cleanup::handle(report),
     }
 
     Ok(())
@@ -83,11 +85,12 @@ impl Prompter {
         }
         let options: Vec<LogItem> = logfiles.iter().map(LogItem).collect();
 
-        let indices: HashSet<usize> = MultiSelect::new("welche, sag:", options)
-            .raw_prompt()?
-            .into_iter()
-            .map(|i| i.index)
-            .collect();
+        let indices: HashSet<usize> =
+            MultiSelect::new("Bitte wähle ein oder mehrere Logdateien aus", options)
+                .raw_prompt()?
+                .into_iter()
+                .map(|i| i.index)
+                .collect();
 
         let selected = logfiles
             .into_iter()

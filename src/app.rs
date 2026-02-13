@@ -105,4 +105,5 @@ pub struct ReportArgs {
 pub enum ReportMode {
     Simple,
     Outages,
+    Cleanup,
 }

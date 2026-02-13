@@ -105,7 +105,7 @@ impl TargetResult {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Connectivity {
     Online,
     Offline,
@@ -132,7 +132,7 @@ impl Display for Connectivity {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct InternetCheckResult {
-    timestamp: DateTime<Utc>,
+    pub timestamp: DateTime<Utc>,
     connectivity: Connectivity,
     speed: LatencySpeed,
     results: Vec<TargetResult>,
