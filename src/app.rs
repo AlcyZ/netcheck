@@ -5,7 +5,7 @@ use clap::{Args, Parser, Subcommand, ValueEnum};
 
 use crate::{
     log::{DEFAULT_FILE_PREFIX, DEFAULT_LOG_MODE, DEFAULT_MAX_SIZE, LogMode},
-    monitor,
+    monitor::{self, DEFAULT_MONITOR_INTERVAL, DEFAULT_MONITOR_TIMEOUT},
     project::Project,
     report,
 };
@@ -66,9 +66,11 @@ pub struct LoggerArgs {
     #[arg(short, long, default_value = DEFAULT_FILE_PREFIX)]
     pub filename: String,
 
+    /// Sets the max size of the logfile. If this value is exceeded, a new logfile will be created.
     #[arg(short, long, default_value_t = DEFAULT_MAX_SIZE)]
     pub size: u64,
 
+    /// Sets the log mode. 'Stdout' will only log in the terminal, 'File' will only log into files.
     #[arg(short, long, value_enum, default_value_t = DEFAULT_LOG_MODE)]
     pub mode: LogMode,
 }
@@ -83,10 +85,12 @@ pub struct LoggerLocationArgs {
 
 #[derive(clap::Args, Debug)]
 pub struct ObserverArgs {
-    #[arg(short, long, default_value_t = 10)]
+    /// Sets the interval in which the connection checks will be performed.
+    #[arg(short, long, default_value_t = DEFAULT_MONITOR_INTERVAL)]
     pub interval: u64,
 
-    #[arg(short, long, default_value_t = 5)]
+    /// Sets the timeout for the requests that check the internet connection.
+    #[arg(short, long, default_value_t = DEFAULT_MONITOR_TIMEOUT)]
     pub timeout: u64,
 }
 

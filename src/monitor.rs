@@ -11,6 +11,9 @@ use crate::{
     runner::run_loop,
 };
 
+pub const DEFAULT_MONITOR_INTERVAL: u64 = 5;
+pub const DEFAULT_MONITOR_TIMEOUT: u64 = 3;
+
 pub async fn run(args: MonitorArgs, project: Project) -> Result<()> {
     let logger = Logger::builder()
         .with_mode(args.logger.mode)
