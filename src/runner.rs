@@ -1,4 +1,7 @@
-use std::{sync::Arc, time::Duration};
+use std::{
+    sync::Arc,
+    time::{Duration, Instant},
+};
 
 use anyhow::Result;
 use reqwest::Client;
@@ -21,15 +24,27 @@ where
     println!("Press CTRL-C to abort...");
 
     let mut previous = None::<Connectivity>;
+    let start = Instant::now();
+
     previous = Some(cb(client.clone(), Arc::clone(&logger), previous).await?);
+    let mut next_tick = duration.saturating_sub(start.elapsed());
 
     loop {
         tokio::select! {
-            _ = tokio::time::sleep(duration) => {
-                previous = Some(
-                    cb(client.clone(), Arc::clone(&logger), previous).await?
-                );
+            res = async {
+                tokio::time::sleep(next_tick).await;
+
+                let start = Instant::now();
+                let result = cb(client.clone(), Arc::clone(&logger), previous).await;
+                let next = duration.saturating_sub(start.elapsed());
+
+                (result, next)
+            } => {
+                let (cb_result, new_tick) = res;
+                previous = Some(cb_result?);
+                next_tick = new_tick;
             }
+
             _ = tokio::signal::ctrl_c() => {
                 println!("Gracefully shutdown...");
 
