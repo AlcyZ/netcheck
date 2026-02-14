@@ -73,6 +73,10 @@ pub struct LoggerArgs {
     /// Sets the log mode. 'Stdout' will only log in the terminal, 'File' will only log into files.
     #[arg(short, long, value_enum, default_value_t = DEFAULT_LOG_MODE)]
     pub mode: LogMode,
+
+    /// (Optional) Sets log directory.
+    #[arg(short, long, value_enum)]
+    pub dir: Option<PathBuf>,
 }
 
 #[derive(clap::Args, Debug)]

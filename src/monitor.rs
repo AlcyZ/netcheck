@@ -1,4 +1,4 @@
-use std::{sync::Arc, time::Duration};
+use std::{ops::Deref, sync::Arc, time::Duration};
 
 use anyhow::Result;
 use reqwest::Client;
@@ -15,9 +15,14 @@ pub const DEFAULT_MONITOR_INTERVAL: u64 = 5;
 pub const DEFAULT_MONITOR_TIMEOUT: u64 = 3;
 
 pub async fn run(args: MonitorArgs, project: Project) -> Result<()> {
+    let log_dir = match &args.logger.dir {
+        Some(path) => path.deref(),
+        None => project.log_dir(),
+    };
+
     let logger = Logger::builder()
         .with_mode(args.logger.mode)
-        .with_dir(project.log_dir())
+        .with_dir(log_dir)
         .with_file_prefix(args.logger.filename)
         .with_max_size(args.logger.size)
         .build()?;
