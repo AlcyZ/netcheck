@@ -1,4 +1,4 @@
-use chrono::{DateTime, TimeDelta, Utc};
+use chrono::{DateTime, Local, TimeDelta, Utc};
 
 use crate::{
     check::{Connectivity, InternetCheckResult},
@@ -48,7 +48,8 @@ impl<'a> DowntimeTracker<'a> {
     }
 
     fn format_datetime(datetime: &DateTime<Utc>) -> String {
-        datetime.format("%d.%m.%Y %H:%M").to_string()
+        let local: DateTime<Local> = datetime.with_timezone(&Local);
+        local.format("%d.%m.%Y %H:%M").to_string()
     }
 
     fn human_duration(delta: TimeDelta) -> String {
