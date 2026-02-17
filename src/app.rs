@@ -10,7 +10,7 @@ use crate::{
     report,
 };
 
-pub const DEFAULT_REPORT_MODE: ReportMode = ReportMode::Simple;
+pub const DEFAULT_REPORT_MODE: ReportMode = ReportMode::Outages;
 
 pub struct App {
     project: Project,
