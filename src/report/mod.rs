@@ -7,6 +7,7 @@ use std::{
 
 use anyhow::Result;
 use inquire::MultiSelect;
+use regex::Regex;
 use serde_json::Value;
 
 use crate::{
@@ -75,7 +76,17 @@ impl Logfile {
 struct Prompter;
 
 impl Prompter {
-    fn ask_logfile(logfiles: Vec<Logfile>) -> Result<Vec<Logfile>> {
+    fn ask_logfile(mut logfiles: Vec<Logfile>) -> Result<Vec<Logfile>> {
+        let re = Regex::new(r"(\d{4}-\d{2}-\d{2})").unwrap();
+
+        logfiles.sort_by_cached_key(|logfile| {
+            re.captures(&logfile.name)
+                .and_then(|cap| cap.get(1))
+                .map(|m| m.as_str().to_string())
+                .unwrap_or_else(|| "0000-00-00".to_string())
+        });
+        logfiles.reverse();
+
         #[derive(Debug)]
         struct LogItem<'a>(&'a Logfile);
         impl<'a> std::fmt::Display for LogItem<'a> {
