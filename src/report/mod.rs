@@ -17,8 +17,10 @@ use crate::{
 };
 
 mod cleanup;
+mod duration;
 mod outages;
 mod simple;
+mod util;
 
 pub async fn run(args: ReportArgs, project: Project) -> Result<()> {
     let log_dir = match args.dir.as_deref() {
@@ -31,12 +33,13 @@ pub async fn run(args: ReportArgs, project: Project) -> Result<()> {
         ReportMode::Simple => simple::handle(report),
         ReportMode::Outages => outages::handle(report),
         ReportMode::Cleanup => cleanup::handle(report),
+        ReportMode::Duration => duration::handle(report),
     }
 
     Ok(())
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Logfile {
     name: String,
     path: PathBuf,
@@ -114,7 +117,7 @@ impl Prompter {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct ReportItem {
     logfile: Logfile,
     results: Vec<InternetCheckResult>,
@@ -128,7 +131,7 @@ impl ReportItem {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Report {
     items: Vec<ReportItem>,
 }

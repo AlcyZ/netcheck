@@ -113,5 +113,6 @@ pub struct ReportArgs {
 pub enum ReportMode {
     Simple,
     Outages,
+    Duration,
     Cleanup,
 }
