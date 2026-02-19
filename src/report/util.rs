@@ -1,4 +1,4 @@
-use chrono::{DateTime, Local, TimeDelta, Utc};
+use chrono::TimeDelta;
 
 use crate::check::{Connectivity, InternetCheckResult};
 
@@ -31,11 +31,6 @@ impl<'a> DowntimeTracker<'a> {
         }
     }
 
-    pub fn format_datetime(datetime: &DateTime<Utc>) -> String {
-        let local: DateTime<Local> = datetime.with_timezone(&Local);
-        local.format("%d.%m.%Y %H:%M").to_string()
-    }
-
     pub fn human_duration_val(delta: &TimeDelta) -> (i64, &'static str) {
         let checks = [
             (delta.num_days(), "day", "days"),
@@ -56,10 +51,5 @@ impl<'a> DowntimeTracker<'a> {
     pub fn human_duration(delta: &TimeDelta) -> String {
         let (value, unit) = Self::human_duration_val(delta);
         format!("{value} {unit}")
-    }
-
-    pub fn human_duration_text(delta: &TimeDelta) -> String {
-        let (value, unit) = DowntimeTracker::human_duration_val(delta);
-        format!("took {value} {unit}")
     }
 }

@@ -14,7 +14,6 @@ use crate::{
 };
 
 mod cleanup;
-mod duration;
 mod outages;
 mod simple;
 mod util;
@@ -26,7 +25,6 @@ pub async fn run(args: ReportArgs, project: Project) -> Result<()> {
         ReportMode::Simple => simple::handle(report),
         ReportMode::Outages => outages::handle(report),
         ReportMode::Cleanup => cleanup::handle(report),
-        ReportMode::Duration => duration::handle(report),
     }
 
     Ok(())

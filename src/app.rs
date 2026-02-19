@@ -234,7 +234,6 @@ impl<'a> ReportFileArgs {
 pub enum ReportMode {
     Simple,
     Outages,
-    Duration,
     Cleanup,
 }
 
