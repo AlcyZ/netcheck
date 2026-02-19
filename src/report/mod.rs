@@ -1,13 +1,10 @@
 use std::{
-    collections::HashSet,
-    fs::{File, read_dir},
+    fs::File,
     io::{BufRead, BufReader},
     path::{Path, PathBuf},
 };
 
 use anyhow::Result;
-use inquire::MultiSelect;
-use regex::Regex;
 use serde_json::Value;
 
 use crate::{
@@ -23,11 +20,7 @@ mod simple;
 mod util;
 
 pub async fn run(args: ReportArgs, project: Project) -> Result<()> {
-    let log_dir = match args.dir.as_deref() {
-        Some(dir) => dir,
-        None => project.log_dir(),
-    };
-    let report = Report::try_from_prompt(log_dir)?;
+    let report = Report::from_path_bufs(args.logfiles(&project)?);
 
     match args.mode {
         ReportMode::Simple => simple::handle(report),
@@ -50,70 +43,13 @@ impl Logfile {
         Logfile { name, path }
     }
 
-    fn try_collect<P: AsRef<Path>>(dir: P) -> Result<Vec<Logfile>> {
-        let logfiles = read_dir(dir.as_ref())?
-            .filter_map(|e| e.ok())
-            .filter_map(|e| {
-                let path = e.path();
-
-                if path
-                    .extension()
-                    .and_then(|x| x.to_str())
-                    .map(|s| s != "jsonl")
-                    .unwrap_or(true)
-                {
-                    None
-                } else {
-                    e.file_name()
-                        .into_string()
-                        .ok()
-                        .map(|name| Logfile::new(name, path))
-                }
-            })
-            .collect::<Vec<Logfile>>();
-
-        Ok(logfiles)
-    }
-}
-
-struct Prompter;
-
-impl Prompter {
-    fn ask_logfile(mut logfiles: Vec<Logfile>) -> Result<Vec<Logfile>> {
-        let re = Regex::new(r"(\d{4}-\d{2}-\d{2})").unwrap();
-
-        logfiles.sort_by_cached_key(|logfile| {
-            re.captures(&logfile.name)
-                .and_then(|cap| cap.get(1))
-                .map(|m| m.as_str().to_string())
-                .unwrap_or_else(|| "0000-00-00".to_string())
-        });
-        logfiles.reverse();
-
-        #[derive(Debug)]
-        struct LogItem<'a>(&'a Logfile);
-        impl<'a> std::fmt::Display for LogItem<'a> {
-            fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-                write!(f, "{}", self.0.name)
-            }
-        }
-        let options: Vec<LogItem> = logfiles.iter().map(LogItem).collect();
-
-        let indices: HashSet<usize> =
-            MultiSelect::new("Bitte wähle ein oder mehrere Logdateien aus", options)
-                .raw_prompt()?
-                .into_iter()
-                .map(|i| i.index)
-                .collect();
-
-        let selected = logfiles
-            .into_iter()
-            .enumerate()
-            .filter(|(i, _)| indices.contains(i))
-            .map(|(_, log)| log)
-            .collect();
-
-        Ok(selected)
+    fn from_path_buf(path: PathBuf) -> Self {
+        let name = path
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or("")
+            .to_string();
+        Self::new(name, path)
     }
 }
 
@@ -137,25 +73,29 @@ struct Report {
 }
 
 impl Report {
-    fn try_from_prompt<P: AsRef<Path>>(log_dir: P) -> Result<Self> {
-        let logfiles = Logfile::try_collect(log_dir)?;
-
-        let items = Prompter::ask_logfile(logfiles)?
+    fn from_path_bufs(paths: Vec<PathBuf>) -> Self {
+        let items = paths
             .into_iter()
-            .map(|logfile| ReportItem::from_logfile(logfile))
+            .map(|p| ReportItem::from_logfile(Logfile::from_path_buf(p)))
             .collect();
 
-        Ok(Report { items })
+        Self { items }
     }
 
     fn collect_results_from_logfile(logfile: &Logfile) -> Vec<InternetCheckResult> {
-        if let Ok(file) = File::open(&logfile.path) {
-            let reader = BufReader::new(file);
+        Self::collect_results_from_path(&logfile.path)
+    }
 
-            Report::collect_results_from_reader(reader)
-        } else {
-            vec![]
+    fn collect_results_from_path<P: AsRef<Path>>(path: P) -> Vec<InternetCheckResult> {
+        match File::open(path.as_ref()) {
+            Ok(file) => Self::collect_results_from_file(file),
+            Err(_) => vec![],
         }
+    }
+
+    fn collect_results_from_file(file: File) -> Vec<InternetCheckResult> {
+        let reader = BufReader::new(file);
+        Self::collect_results_from_reader(reader)
     }
 
     fn collect_results_from_reader(reader: BufReader<File>) -> Vec<InternetCheckResult> {
