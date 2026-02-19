@@ -11,6 +11,7 @@ mod app;
 mod check;
 mod project;
 mod runner;
+mod sort;
 #[macro_use]
 mod log;
 mod monitor;
