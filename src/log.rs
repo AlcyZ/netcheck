@@ -89,7 +89,7 @@ impl Logger {
     }
 
     fn log_stdout(&self, data: impl Serialize) -> Result<()> {
-        let content = serde_json::to_string_pretty(&data)?;
+        let content = serde_json::to_string(&data)?;
         println!("{content}");
 
         Ok(())
