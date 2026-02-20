@@ -8,7 +8,7 @@ use anyhow::Result;
 use serde_json::Value;
 
 use crate::{
-    app::{ReportArgs, ReportMode},
+    app::report::{ReportArgs, ReportMode},
     check::InternetCheckResult,
     project::Project,
 };
