@@ -49,7 +49,7 @@ macro_rules! log_val {
 
 pub const DEFAULT_FILE_PREFIX: &str = "netcheck";
 pub const DEFAULT_MAX_SIZE: u64 = 2 * 1024 * 1024;
-pub const DEFAULT_LOG_MODE: LogMode = LogMode::File;
+pub const DEFAULT_LOG_MODE: LogMode = LogMode::All;
 
 pub struct Logger {
     dir: PathBuf,

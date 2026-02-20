@@ -4,7 +4,7 @@ use anyhow::Result;
 use reqwest::Client;
 
 use crate::{
-    app::MonitorArgs,
+    app::monitor::MonitorArgs,
     check::{Connectivity, check_connection},
     log::Logger,
     project::Project,

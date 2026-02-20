@@ -8,16 +8,14 @@ use anyhow::Result;
 use serde_json::Value;
 
 use crate::{
-    app::{ReportArgs, ReportMode},
+    app::report::{ReportArgs, ReportMode},
     check::InternetCheckResult,
     project::Project,
 };
 
 mod cleanup;
-mod duration;
 mod outages;
 mod simple;
-mod util;
 
 pub async fn run(args: ReportArgs, project: Project) -> Result<()> {
     let report = Report::from_path_bufs(args.logfiles(&project)?);
@@ -26,7 +24,6 @@ pub async fn run(args: ReportArgs, project: Project) -> Result<()> {
         ReportMode::Simple => simple::handle(report),
         ReportMode::Outages => outages::handle(report),
         ReportMode::Cleanup => cleanup::handle(report),
-        ReportMode::Duration => duration::handle(report),
     }
 
     Ok(())
@@ -68,12 +65,12 @@ impl ReportItem {
 }
 
 #[derive(Debug, Clone)]
-struct Report {
+pub(super) struct Report {
     items: Vec<ReportItem>,
 }
 
 impl Report {
-    fn from_path_bufs(paths: Vec<PathBuf>) -> Self {
+    pub(super) fn from_path_bufs(paths: Vec<PathBuf>) -> Self {
         let items = paths
             .into_iter()
             .map(|p| ReportItem::from_logfile(Logfile::from_path_buf(p)))
@@ -82,6 +79,12 @@ impl Report {
         Self { items }
     }
 
+    pub(super) fn iter_all_results(&self) -> impl Iterator<Item = &InternetCheckResult> {
+        self.items.iter().flat_map(|item| &item.results)
+    }
+}
+
+impl Report {
     fn collect_results_from_logfile(logfile: &Logfile) -> Vec<InternetCheckResult> {
         Self::collect_results_from_path(&logfile.path)
     }

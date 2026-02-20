@@ -9,9 +9,12 @@ use crate::app::App;
 
 mod app;
 mod check;
+mod find;
 mod project;
 mod runner;
 mod sort;
+mod time;
+mod tracker;
 #[macro_use]
 mod log;
 mod monitor;
