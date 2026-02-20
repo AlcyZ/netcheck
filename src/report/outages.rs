@@ -1,8 +1,10 @@
-use chrono::{DateTime, Local, TimeDelta, Utc};
+use chrono::TimeDelta;
 
 use crate::{
     check::InternetCheckResult,
-    report::{Report, ReportItem, util::DowntimeTracker},
+    report::{Report, ReportItem},
+    time::{human_duration, human_duration_val, timespan_string},
+    tracker::DowntimeTracker,
 };
 
 pub fn handle(report: Report) {
@@ -20,7 +22,7 @@ pub fn handle(report: Report) {
     println!("Outages: {}", deltas.len());
 
     if let Some(avg) = DurationTracker::calculate_avg(&deltas) {
-        let (value, unit) = DowntimeTracker::human_duration_val(&avg);
+        let (value, unit) = human_duration_val(&avg);
         println!("Average duration: {} {}", value, unit);
     }
 }
@@ -43,8 +45,8 @@ fn handle_report_item(item: &ReportItem) {
         .map(|(delta, first, current)| {
             format!(
                 "Internet outage: {} | Duration: {}",
-                DurationTracker::timespan_string(first, current),
-                DowntimeTracker::human_duration(&delta),
+                timespan_string(first, current),
+                human_duration(&delta),
             )
         })
         .collect::<Vec<String>>();
@@ -90,31 +92,5 @@ impl<'a> DurationTracker<'a> {
         let avg_nanos = total_nanos / (deltas.len() as i128);
 
         Some(TimeDelta::nanoseconds(avg_nanos as i64))
-    }
-
-    fn timespan_string(first: &InternetCheckResult, current: &InternetCheckResult) -> String {
-        let to_local_date =
-            |d: &DateTime<Utc>| d.with_timezone(&Local).format("%Y-%m-%d").to_string();
-
-        let to_time = |d: &DateTime<Utc>| d.with_timezone(&Local).format("%H:%M").to_string();
-
-        let date_first = to_local_date(&first.timestamp);
-        let date_current = to_local_date(&current.timestamp);
-
-        if date_first == date_current {
-            format!(
-                "{date_first}: {} - {}",
-                to_time(&first.timestamp),
-                to_time(&current.timestamp)
-            )
-        } else {
-            format!(
-                "{}: {} - {}: {}",
-                date_first,
-                to_time(&first.timestamp),
-                date_current,
-                to_time(&current.timestamp)
-            )
-        }
     }
 }

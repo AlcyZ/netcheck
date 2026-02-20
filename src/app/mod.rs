@@ -35,7 +35,7 @@ impl App {
             Command::Report(args) => report_run(args, self.project)
                 .await
                 .context("The report command failed"),
-            Command::Find(args) => find_run(args),
+            Command::Find(args) => find_run(args, self.project),
         }
     }
 }

@@ -1,5 +1,3 @@
-use chrono::TimeDelta;
-
 use crate::check::{Connectivity, InternetCheckResult};
 
 pub struct DowntimeTracker<'a> {
@@ -29,27 +27,5 @@ impl<'a> DowntimeTracker<'a> {
             }
             _ => None,
         }
-    }
-
-    pub fn human_duration_val(delta: &TimeDelta) -> (i64, &'static str) {
-        let checks = [
-            (delta.num_days(), "day", "days"),
-            (delta.num_hours(), "hour", "hours"),
-            (delta.num_minutes(), "minute", "minutes"),
-            (delta.num_seconds(), "second", "seconds"),
-        ];
-
-        let (value, singular, plural) = checks
-            .into_iter()
-            .find(|(val, _, _)| *val >= 1)
-            .unwrap_or(checks[3]);
-        let unit = if value == 1 { singular } else { plural };
-
-        (value, unit)
-    }
-
-    pub fn human_duration(delta: &TimeDelta) -> String {
-        let (value, unit) = Self::human_duration_val(delta);
-        format!("{value} {unit}")
     }
 }

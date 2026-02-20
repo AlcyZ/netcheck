@@ -1,13 +1,18 @@
+use std::path::PathBuf;
+
 use clap::{Args, Subcommand};
 
 #[derive(Args, Debug)]
 pub struct FindArgs {
     #[command(subcommand)]
-    action: FindAction,
+    pub action: FindAction,
+
+    /// (Optional) Sets log directory.
+    #[arg(short, long, value_enum)]
+    pub dir: Option<PathBuf>,
 }
 
 #[derive(Subcommand, Debug)]
-enum FindAction {
-    Last,
+pub enum FindAction {
     Longest,
 }

@@ -16,7 +16,6 @@ use crate::{
 mod cleanup;
 mod outages;
 mod simple;
-mod util;
 
 pub async fn run(args: ReportArgs, project: Project) -> Result<()> {
     let report = Report::from_path_bufs(args.logfiles(&project)?);
@@ -66,12 +65,12 @@ impl ReportItem {
 }
 
 #[derive(Debug, Clone)]
-struct Report {
+pub(super) struct Report {
     items: Vec<ReportItem>,
 }
 
 impl Report {
-    fn from_path_bufs(paths: Vec<PathBuf>) -> Self {
+    pub(super) fn from_path_bufs(paths: Vec<PathBuf>) -> Self {
         let items = paths
             .into_iter()
             .map(|p| ReportItem::from_logfile(Logfile::from_path_buf(p)))
@@ -80,6 +79,12 @@ impl Report {
         Self { items }
     }
 
+    pub(super) fn iter_all_results(&self) -> impl Iterator<Item = &InternetCheckResult> {
+        self.items.iter().flat_map(|item| &item.results)
+    }
+}
+
+impl Report {
     fn collect_results_from_logfile(logfile: &Logfile) -> Vec<InternetCheckResult> {
         Self::collect_results_from_path(&logfile.path)
     }
