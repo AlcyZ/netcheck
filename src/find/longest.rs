@@ -3,7 +3,7 @@ use chrono::TimeDelta;
 use crate::{
     check::InternetCheckResult,
     report::Report,
-    time::{human_duration, timespan_string},
+    time::{Humanize, timespan_string},
     tracker::DowntimeTracker,
 };
 
@@ -18,7 +18,7 @@ pub fn run(report: Report) {
         let msg = format!(
             "Longest outage from {}, took {}",
             timespan_string(first, last),
-            human_duration(&delta)
+            delta.humanize(),
         );
         println!("{msg}");
     }

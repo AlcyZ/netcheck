@@ -3,7 +3,7 @@ use chrono::TimeDelta;
 use crate::{
     check::InternetCheckResult,
     report::{Report, ReportItem},
-    time::{human_duration, human_duration_val, timespan_string},
+    time::{Humanize, timespan_string},
     tracker::DowntimeTracker,
 };
 
@@ -22,8 +22,7 @@ pub fn handle(report: Report) {
     println!("Outages: {}", deltas.len());
 
     if let Some(avg) = DurationTracker::calculate_avg(&deltas) {
-        let (value, unit) = human_duration_val(&avg);
-        println!("Average duration: {} {}", value, unit);
+        println!("Average duration: {}", avg.humanize());
     }
 }
 
@@ -46,7 +45,7 @@ fn handle_report_item(item: &ReportItem) {
             format!(
                 "Internet outage: {} | Duration: {}",
                 timespan_string(first, current),
-                human_duration(&delta),
+                delta.humanize(),
             )
         })
         .collect::<Vec<String>>();

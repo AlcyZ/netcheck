@@ -27,24 +27,57 @@ pub fn timespan_string(first: &InternetCheckResult, current: &InternetCheckResul
     }
 }
 
-pub fn human_duration_val(delta: &TimeDelta) -> (i64, &'static str) {
-    let checks = [
-        (delta.num_days(), "day", "days"),
-        (delta.num_hours(), "hour", "hours"),
-        (delta.num_minutes(), "minute", "minutes"),
-        (delta.num_seconds(), "second", "seconds"),
-    ];
-
-    let (value, singular, plural) = checks
-        .into_iter()
-        .find(|(val, _, _)| *val >= 1)
-        .unwrap_or(checks[3]);
-    let unit = if value == 1 { singular } else { plural };
-
-    (value, unit)
+pub trait Humanize {
+    fn humanize(&self) -> String;
 }
 
-pub fn human_duration(delta: &TimeDelta) -> String {
-    let (value, unit) = human_duration_val(delta);
-    format!("{value} {unit}")
+impl Humanize for TimeDelta {
+    fn humanize(&self) -> String {
+        let total_seconds = self.num_seconds().abs();
+
+        if total_seconds == 0 {
+            return "0 seconds".to_string();
+        }
+
+        let days = total_seconds / 86400;
+        let hours = (total_seconds % 86400) / 3600;
+        let minutes = (total_seconds % 3600) / 60;
+        let seconds = total_seconds % 60;
+
+        let mut parts = Vec::new();
+
+        if days > 0 {
+            parts.push(format!("{} day{}", days, if days == 1 { "" } else { "s" }));
+        }
+        if hours > 0 {
+            parts.push(format!(
+                "{} hour{}",
+                hours,
+                if hours == 1 { "" } else { "s" }
+            ));
+        }
+        if minutes > 0 {
+            parts.push(format!(
+                "{} minute{}",
+                minutes,
+                if minutes == 1 { "" } else { "s" }
+            ));
+        }
+        if seconds > 0 {
+            parts.push(format!(
+                "{} second{}",
+                seconds,
+                if seconds == 1 { "" } else { "s" }
+            ));
+        }
+
+        match parts.len() {
+            0 => "0 seconds".to_string(),
+            1 => parts[0].clone(),
+            _ => {
+                let last = parts.pop().unwrap();
+                format!("{} and {}", parts.join(", "), last)
+            }
+        }
+    }
 }
