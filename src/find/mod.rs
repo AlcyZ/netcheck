@@ -12,6 +12,7 @@ use crate::{
 };
 
 mod longest;
+mod most_outages;
 
 pub fn run(args: FindArgs, project: Project) -> Result<()> {
     let logdir = match args.dir.as_deref() {
@@ -23,6 +24,7 @@ pub fn run(args: FindArgs, project: Project) -> Result<()> {
 
     match args.action {
         FindAction::Longest => longest::run(report),
+        FindAction::MostOutages => most_outages::run(report),
     }
 
     Ok(())

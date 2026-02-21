@@ -2,27 +2,27 @@ use chrono::{DateTime, Local, TimeDelta, Utc};
 
 use crate::check::InternetCheckResult;
 
-pub fn timespan_string(first: &InternetCheckResult, current: &InternetCheckResult) -> String {
+pub fn timespan_string(start: &InternetCheckResult, end: &InternetCheckResult) -> String {
     let to_local_date = |d: &DateTime<Utc>| d.with_timezone(&Local).format("%Y-%m-%d").to_string();
 
     let to_time = |d: &DateTime<Utc>| d.with_timezone(&Local).format("%H:%M").to_string();
 
-    let date_first = to_local_date(&first.timestamp);
-    let date_current = to_local_date(&current.timestamp);
+    let date_first = to_local_date(&start.timestamp);
+    let date_current = to_local_date(&end.timestamp);
 
     if date_first == date_current {
         format!(
             "{date_first}: {} - {}",
-            to_time(&first.timestamp),
-            to_time(&current.timestamp)
+            to_time(&start.timestamp),
+            to_time(&end.timestamp)
         )
     } else {
         format!(
             "{}: {} - {}: {}",
             date_first,
-            to_time(&first.timestamp),
+            to_time(&start.timestamp),
             date_current,
-            to_time(&current.timestamp)
+            to_time(&end.timestamp)
         )
     }
 }
