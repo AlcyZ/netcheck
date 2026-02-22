@@ -1,3 +1,5 @@
+use std::borrow::Borrow;
+
 use chrono::TimeDelta;
 
 use crate::{
@@ -54,6 +56,11 @@ fn handle_report_item(item: &ReportItem) {
     for message in messages {
         println!("{message}");
     }
+
+    if let Some(avg) = DurationTracker::calculate_avg(deltas.iter().map(|(d, _, _)| d)) {
+        println!("Average duration: {}", avg.humanize());
+    }
+
     println!();
 }
 
@@ -78,17 +85,24 @@ impl<'a> DurationTracker<'a> {
         })
     }
 
-    fn calculate_avg(deltas: &[TimeDelta]) -> Option<TimeDelta> {
-        if deltas.is_empty() {
+    fn calculate_avg<I>(deltas: I) -> Option<TimeDelta>
+    where
+        I: IntoIterator,
+        I::Item: Borrow<TimeDelta>,
+        I::IntoIter: ExactSizeIterator,
+    {
+        let iter = deltas.into_iter();
+        let count = iter.len();
+
+        if count == 0 {
             return None;
         }
 
-        let total_nanos: i128 = deltas
-            .iter()
-            .map(|d| d.num_nanoseconds().unwrap_or(0) as i128)
+        let total_nanos: i128 = iter
+            .map(|d| d.borrow().num_nanoseconds().unwrap_or(0) as i128)
             .sum();
 
-        let avg_nanos = total_nanos / (deltas.len() as i128);
+        let avg_nanos = total_nanos / (count as i128);
 
         Some(TimeDelta::nanoseconds(avg_nanos as i64))
     }
