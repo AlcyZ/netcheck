@@ -3,7 +3,7 @@ use std::borrow::Borrow;
 use chrono::TimeDelta;
 
 use crate::{
-    check::InternetCheckResult,
+    model::InternetCheckResult,
     report::{Report, ReportItem},
     time::{Humanize, timespan_string},
     tracker::DowntimeTracker,

@@ -6,7 +6,7 @@ use std::{
 use anyhow::Result;
 use reqwest::Client;
 
-use crate::{check::Connectivity, log::Logger};
+use crate::{log::Logger, model::Connectivity};
 
 pub async fn run_loop<Cb, FutCb, Shutdown, FutShutdown>(
     client: Client,

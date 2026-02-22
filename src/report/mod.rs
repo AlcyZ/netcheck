@@ -11,7 +11,7 @@ use serde_json::Value;
 
 use crate::{
     app::report::{ReportArgs, ReportMode},
-    check::InternetCheckResult,
+    model::InternetCheckResult,
     project::Project,
     time::{Humanize, timespan_string},
     tracker::DowntimeTracker,

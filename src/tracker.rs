@@ -1,4 +1,4 @@
-use crate::check::{Connectivity, InternetCheckResult};
+use crate::model::{Connectivity, InternetCheckResult};
 
 pub struct DowntimeTracker<'a> {
     first_offline: Option<&'a InternetCheckResult>,

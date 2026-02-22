@@ -1,6 +1,6 @@
 use chrono::{DateTime, Local, TimeDelta, Utc};
 
-use crate::check::InternetCheckResult;
+use crate::model::InternetCheckResult;
 
 pub fn timespan_string(start: &InternetCheckResult, end: &InternetCheckResult) -> String {
     let to_local_date = |d: &DateTime<Utc>| d.with_timezone(&Local).format("%Y-%m-%d").to_string();
