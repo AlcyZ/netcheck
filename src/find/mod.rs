@@ -7,8 +7,8 @@ use anyhow::Result;
 
 use crate::{
     app::find::{FindAction, FindArgs},
+    model::Report,
     project::Project,
-    report::Report,
 };
 
 mod longest;

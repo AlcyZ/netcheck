@@ -3,9 +3,8 @@ use std::borrow::Borrow;
 use chrono::TimeDelta;
 
 use crate::{
-    model::InternetCheckResult,
-    report::{Report, ReportItem},
-    time::{Humanize, timespan_string},
+    model::{InternetCheckResult, Report, ReportItem},
+    time::Humanize,
     tracker::DowntimeTracker,
 };
 
@@ -15,9 +14,7 @@ pub fn handle(report: Report) {
     let mut tracker = DurationTracker::new();
 
     let deltas = report
-        .items
-        .iter()
-        .flat_map(|i| &i.results)
+        .iter_all_results()
         .filter_map(|r| tracker.track(r).and_then(|(d, _, _)| Some(d)))
         .collect::<Vec<TimeDelta>>();
 
@@ -29,35 +26,16 @@ pub fn handle(report: Report) {
 }
 
 fn handle_report(report: Report) {
-    report.items.iter().for_each(handle_report_item);
+    report.iter_items().for_each(handle_report_item);
 }
 
 fn handle_report_item(item: &ReportItem) {
-    let mut tracker = DurationTracker::new();
+    let outages = item.outages();
 
-    let deltas = item
-        .results
-        .iter()
-        .flat_map(|r| tracker.track(r))
-        .collect::<Vec<(TimeDelta, &InternetCheckResult, &InternetCheckResult)>>();
+    println!("Duration Report for: {}", item.logfile_name());
+    outages.iter().for_each(|outage| println!("{outage}"));
 
-    let messages = deltas
-        .iter()
-        .map(|(delta, first, current)| {
-            format!(
-                "Internet outage: {} | Duration: {}",
-                timespan_string(first, current),
-                delta.humanize(),
-            )
-        })
-        .collect::<Vec<String>>();
-
-    println!("Duration Report for: {}", item.logfile.name);
-    for message in messages {
-        println!("{message}");
-    }
-
-    if let Some(avg) = DurationTracker::calculate_avg(deltas.iter().map(|(d, _, _)| d)) {
+    if let Some(avg) = DurationTracker::calculate_avg(outages.iter().map(|o| o.duration())) {
         println!("Average duration: {}", avg.humanize());
     }
 

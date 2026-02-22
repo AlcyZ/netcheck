@@ -1,4 +1,4 @@
-use crate::report::Report;
+use crate::model::Report;
 
 pub fn run(report: Report) {
     if let Some(outage) = report
