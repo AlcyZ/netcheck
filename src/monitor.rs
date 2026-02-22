@@ -4,11 +4,8 @@ use anyhow::Result;
 use reqwest::Client;
 
 use crate::{
-    app::monitor::MonitorArgs,
-    check::{Connectivity, check_connection},
-    log::Logger,
-    project::Project,
-    runner::run_loop,
+    app::monitor::MonitorArgs, check::check_connection, log::Logger, model::Connectivity,
+    project::Project, runner::run_loop,
 };
 
 pub const DEFAULT_MONITOR_INTERVAL: u64 = 5;

@@ -1,9 +1,10 @@
+use std::borrow::Borrow;
+
 use chrono::TimeDelta;
 
 use crate::{
-    check::InternetCheckResult,
-    report::{Report, ReportItem},
-    time::{Humanize, timespan_string},
+    model::{InternetCheckResult, Report, ReportItem},
+    time::Humanize,
     tracker::DowntimeTracker,
 };
 
@@ -13,9 +14,7 @@ pub fn handle(report: Report) {
     let mut tracker = DurationTracker::new();
 
     let deltas = report
-        .items
-        .iter()
-        .flat_map(|i| &i.results)
+        .iter_all_results()
         .filter_map(|r| tracker.track(r).and_then(|(d, _, _)| Some(d)))
         .collect::<Vec<TimeDelta>>();
 
@@ -27,33 +26,19 @@ pub fn handle(report: Report) {
 }
 
 fn handle_report(report: Report) {
-    report.items.iter().for_each(handle_report_item);
+    report.iter_items().for_each(handle_report_item);
 }
 
 fn handle_report_item(item: &ReportItem) {
-    let mut tracker = DurationTracker::new();
+    let outages = item.outages();
 
-    let deltas = item
-        .results
-        .iter()
-        .flat_map(|r| tracker.track(r))
-        .collect::<Vec<(TimeDelta, &InternetCheckResult, &InternetCheckResult)>>();
+    println!("Duration Report for: {}", item.logfile_name());
+    outages.iter().for_each(|outage| println!("{outage}"));
 
-    let messages = deltas
-        .iter()
-        .map(|(delta, first, current)| {
-            format!(
-                "Internet outage: {} | Duration: {}",
-                timespan_string(first, current),
-                delta.humanize(),
-            )
-        })
-        .collect::<Vec<String>>();
-
-    println!("Duration Report for: {}", item.logfile.name);
-    for message in messages {
-        println!("{message}");
+    if let Some(avg) = DurationTracker::calculate_avg(outages.iter().map(|o| o.duration())) {
+        println!("Average duration: {}", avg.humanize());
     }
+
     println!();
 }
 
@@ -78,17 +63,24 @@ impl<'a> DurationTracker<'a> {
         })
     }
 
-    fn calculate_avg(deltas: &[TimeDelta]) -> Option<TimeDelta> {
-        if deltas.is_empty() {
+    fn calculate_avg<I>(deltas: I) -> Option<TimeDelta>
+    where
+        I: IntoIterator,
+        I::Item: Borrow<TimeDelta>,
+        I::IntoIter: ExactSizeIterator,
+    {
+        let iter = deltas.into_iter();
+        let count = iter.len();
+
+        if count == 0 {
             return None;
         }
 
-        let total_nanos: i128 = deltas
-            .iter()
-            .map(|d| d.num_nanoseconds().unwrap_or(0) as i128)
+        let total_nanos: i128 = iter
+            .map(|d| d.borrow().num_nanoseconds().unwrap_or(0) as i128)
             .sum();
 
-        let avg_nanos = total_nanos / (deltas.len() as i128);
+        let avg_nanos = total_nanos / (count as i128);
 
         Some(TimeDelta::nanoseconds(avg_nanos as i64))
     }

@@ -10,6 +10,7 @@ use crate::app::App;
 mod app;
 mod check;
 mod find;
+mod model;
 mod project;
 mod runner;
 mod sort;

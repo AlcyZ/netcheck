@@ -15,4 +15,5 @@ pub struct FindArgs {
 #[derive(Subcommand, Debug)]
 pub enum FindAction {
     Longest,
+    MostOutages,
 }
