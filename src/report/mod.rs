@@ -1,4 +1,3 @@
-
 use anyhow::Result;
 
 use crate::{
@@ -12,7 +11,7 @@ mod outages;
 mod simple;
 
 pub async fn run(args: ReportArgs, project: Project) -> Result<()> {
-    let report = Report::from_path_bufs(args.logfiles(&project)?);
+    let report = Report::from_path_bufs(args.logfiles(&project)?, args.log_precision());
 
     match args.mode {
         ReportMode::Simple => simple::handle(report),

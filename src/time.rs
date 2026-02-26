@@ -3,9 +3,24 @@ use chrono::{DateTime, Local, TimeDelta, Utc};
 use crate::model::InternetCheckResult;
 
 pub fn timespan_string(start: &InternetCheckResult, end: &InternetCheckResult) -> String {
-    let to_local_date = |d: &DateTime<Utc>| d.with_timezone(&Local).format("%Y-%m-%d").to_string();
+    timespan_string_custom(start, end, None, None)
+}
 
-    let to_time = |d: &DateTime<Utc>| d.with_timezone(&Local).format("%H:%M").to_string();
+pub fn timespan_string_custom(
+    start: &InternetCheckResult,
+    end: &InternetCheckResult,
+    format_local_date: Option<&str>,
+    format_time: Option<&str>,
+) -> String {
+    let format_local_date_str = format_local_date.unwrap_or("%Y-%m-%d");
+    let format_time_str = format_time.unwrap_or("%H:%M");
+
+    let to_local_date = |d: &DateTime<Utc>| {
+        d.with_timezone(&Local)
+            .format(format_local_date_str)
+            .to_string()
+    };
+    let to_time = |d: &DateTime<Utc>| d.with_timezone(&Local).format(format_time_str).to_string();
 
     let date_first = to_local_date(&start.timestamp);
     let date_current = to_local_date(&end.timestamp);

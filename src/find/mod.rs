@@ -20,7 +20,7 @@ pub fn run(args: FindArgs, project: Project) -> Result<()> {
         None => project.log_dir(),
     };
     let logfiles = collect_all_logfiles(logdir)?;
-    let report = Report::from_path_bufs(logfiles);
+    let report = Report::from_path_bufs(logfiles, None);
 
     match args.action {
         FindAction::Longest => longest::run(report),

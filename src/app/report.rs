@@ -7,7 +7,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use crate::{project::Project, sort::sort_by_filename_date};
+use crate::{model::OutageLogPrecision, project::Project, sort::sort_by_filename_date};
 
 pub const DEFAULT_REPORT_MODE: ReportMode = ReportMode::Outages;
 
@@ -21,6 +21,10 @@ pub struct ReportArgs {
     #[arg(short, long, value_enum)]
     pub dir: Option<PathBuf>,
 
+    /// Flag: Enable to show exact time of outages.
+    #[arg(long, default_value_t = false)]
+    exact: bool,
+
     #[command(flatten)]
     file_args: ReportFileArgs,
 }
@@ -33,6 +37,14 @@ impl ReportArgs {
         };
 
         self.file_args.logfiles(logdir)
+    }
+
+    pub fn log_precision(&self) -> Option<OutageLogPrecision> {
+        if self.exact {
+            Some(OutageLogPrecision::Exact)
+        } else {
+            None
+        }
     }
 }
 

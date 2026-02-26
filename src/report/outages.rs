@@ -3,7 +3,7 @@ use std::borrow::Borrow;
 use chrono::TimeDelta;
 
 use crate::{
-    model::{InternetCheckResult, Report, ReportItem},
+    model::{InternetCheckResult, OutageLogPrecision, Report, ReportItem},
     time::Humanize,
     tracker::DowntimeTracker,
 };
@@ -26,11 +26,15 @@ pub fn handle(report: Report) {
 }
 
 fn handle_report(report: Report) {
-    report.iter_items().for_each(handle_report_item);
+    report
+        .iter_items()
+        .map(|i| (i, report.log_precision()))
+        .for_each(handle_report_item);
 }
 
-fn handle_report_item(item: &ReportItem) {
-    let outages = item.outages();
+fn handle_report_item(data: (&ReportItem, OutageLogPrecision)) {
+    let (item, log_precision) = data;
+    let outages = item.outages(log_precision);
 
     println!("Duration Report for: {}", item.logfile_name());
     outages.iter().for_each(|outage| println!("{outage}"));
