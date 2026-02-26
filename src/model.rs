@@ -12,23 +12,27 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use crate::{
-    time::{Humanize, timespan_string},
+    time::{Humanize, timespan_string, timespan_string_custom},
     tracker::DowntimeTracker,
 };
 
 #[derive(Debug, Clone)]
 pub struct Report {
     items: Vec<ReportItem>,
+    log_precision: Option<OutageLogPrecision>,
 }
 
 impl Report {
-    pub fn from_path_bufs(paths: Vec<PathBuf>) -> Self {
+    pub fn from_path_bufs(paths: Vec<PathBuf>, log_precision: Option<OutageLogPrecision>) -> Self {
         let items = paths
             .into_iter()
             .map(|p| ReportItem::from_logfile(Logfile::from_path_buf(p)))
             .collect();
 
-        Self { items }
+        Self {
+            items,
+            log_precision,
+        }
     }
 
     pub fn iter_items(&self) -> impl Iterator<Item = &ReportItem> {
@@ -49,10 +53,18 @@ impl Report {
         self.iter_all_results()
             .filter_map(|result| {
                 tracker.track(result, |start, end| {
-                    Some(Outage::from_start_end(start, end))
+                    Some(Outage::from_start_end(
+                        start,
+                        end,
+                        self.log_precision.unwrap_or(OutageLogPrecision::Normal),
+                    ))
                 })
             })
             .collect()
+    }
+
+    pub fn log_precision(&self) -> OutageLogPrecision {
+        self.log_precision.unwrap_or(OutageLogPrecision::Normal)
     }
 }
 
@@ -94,14 +106,14 @@ pub struct ReportItem {
 }
 
 impl<'a> ReportItem {
-    pub fn outages(&'a self) -> Vec<Outage<'a>> {
+    pub fn outages(&'a self, log_precision: OutageLogPrecision) -> Vec<Outage<'a>> {
         let mut tracker = DowntimeTracker::new();
 
         self.results
             .iter()
             .filter_map(|result| {
                 tracker.track(result, |start, end| {
-                    Some(Outage::from_start_end(start, end))
+                    Some(Outage::from_start_end(start, end, log_precision))
                 })
             })
             .collect()
@@ -149,6 +161,7 @@ pub struct Outage<'a> {
     start: &'a InternetCheckResult,
     end: &'a InternetCheckResult,
     duration: TimeDelta,
+    log_precision: OutageLogPrecision,
 }
 
 impl<'a> Outage<'a> {
@@ -162,29 +175,43 @@ impl<'a> Outage<'a> {
         start: &'a InternetCheckResult,
         end: &'a InternetCheckResult,
         duration: TimeDelta,
+        log_precision: OutageLogPrecision,
     ) -> Self {
         Self {
             start,
             end,
             duration,
+            log_precision,
         }
     }
 
-    fn from_start_end(start: &'a InternetCheckResult, end: &'a InternetCheckResult) -> Self {
+    fn from_start_end(
+        start: &'a InternetCheckResult,
+        end: &'a InternetCheckResult,
+        log_precision: OutageLogPrecision,
+    ) -> Self {
         let duration = end.timestamp - start.timestamp;
-        Self::new(start, end, duration)
+        Self::new(start, end, duration, log_precision)
     }
 }
 
 impl<'a> Display for Outage<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "Outage at {} for {}",
-            timespan_string(self.start, self.end),
-            self.duration.humanize(),
-        )
+        let timespan = match self.log_precision {
+            OutageLogPrecision::Normal => timespan_string(self.start, self.end),
+            OutageLogPrecision::Exact => {
+                timespan_string_custom(self.start, self.end, None, Some("%H:%M:%S"))
+            }
+        };
+
+        write!(f, "Outage at {} for {}", timespan, self.duration.humanize(),)
     }
+}
+
+#[derive(Debug, Copy, Clone)]
+pub enum OutageLogPrecision {
+    Normal,
+    Exact,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
