@@ -20,13 +20,11 @@ pub fn handle(report: Report) {
 
     println!("Outages: {}", deltas.len());
 
-    if let Some(time) = tracker.still_outage() {
-        println!("Still outage since: {time}")
-    }
-
     if let Some(avg) = DurationTracker::calculate_avg(&deltas) {
         println!("Average duration: {}", avg.humanize());
     }
+
+    handle_still_outage(tracker);
 }
 
 fn handle_report(report: Report) {
@@ -48,6 +46,31 @@ fn handle_report_item(data: (&ReportItem, OutageLogPrecision)) {
     }
 
     println!();
+}
+
+fn handle_still_outage(tracker: DurationTracker) {
+    if let Some(time) = tracker.still_outage() {
+        let message = format!("Connection lost since: {time}");
+        let offset = 2;
+
+        let width = message.len() + offset + 2;
+        let border = "#".repeat(width);
+
+        let pb = || println!("{border}");
+        let pe = || println!("#{:^width$}#", "", width = width - offset);
+        let pl = |t: String| println!("#{:^width$}#", t, width = width - offset);
+
+        println!();
+        pb();
+        pe();
+        pl("WARNING".into());
+        pl("Still no internet connection".into());
+        pe();
+        pl(format!("Connection lost since: {time}"));
+        pe();
+        pe();
+        pb();
+    }
 }
 
 struct DurationTracker<'a>(DowntimeTracker<'a>);
