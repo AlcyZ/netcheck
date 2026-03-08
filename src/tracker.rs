@@ -28,4 +28,8 @@ impl<'a> DowntimeTracker<'a> {
             _ => None,
         }
     }
+
+    pub fn first_offline(&self) -> Option<&'a InternetCheckResult> {
+        self.first_offline
+    }
 }
