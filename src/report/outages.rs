@@ -1,6 +1,6 @@
 use std::borrow::Borrow;
 
-use chrono::TimeDelta;
+use chrono::{Local, TimeDelta};
 
 use crate::{
     model::{InternetCheckResult, OutageLogPrecision, Report, ReportItem},
@@ -19,6 +19,10 @@ pub fn handle(report: Report) {
         .collect::<Vec<TimeDelta>>();
 
     println!("Outages: {}", deltas.len());
+
+    if let Some(time) = tracker.still_outage() {
+        println!("Still outage since: {time}")
+    }
 
     if let Some(avg) = DurationTracker::calculate_avg(&deltas) {
         println!("Average duration: {}", avg.humanize());
@@ -64,6 +68,15 @@ impl<'a> DurationTracker<'a> {
             } else {
                 None
             }
+        })
+    }
+
+    fn still_outage(&self) -> Option<String> {
+        self.0.first_offline().map(|r| {
+            r.timestamp
+                .with_timezone(&Local)
+                .format("%Y-%m-%d: %H:%M")
+                .to_string()
         })
     }
 
