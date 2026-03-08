@@ -1,6 +1,6 @@
 use std::borrow::Borrow;
 
-use chrono::{Local, TimeDelta};
+use chrono::{DateTime, Local, TimeDelta, Utc};
 
 use crate::{
     model::{InternetCheckResult, OutageLogPrecision, Report, ReportItem},
@@ -49,11 +49,13 @@ fn handle_report_item(data: (&ReportItem, OutageLogPrecision)) {
 }
 
 fn handle_still_outage(tracker: DurationTracker) {
-    if let Some(time) = tracker.still_outage() {
-        let message = format!("Connection lost since: {time}");
-        let offset = 2;
+    if let Some((time, elapsed)) = tracker.still_outage() {
+        let message_lost = format!("Connection lost since: {time}");
+        let message_elapsed = format!("Outage duration: {elapsed}");
+        let message_len = message_lost.len().max(message_elapsed.len());
 
-        let width = message.len() + offset + 2;
+        let offset = 2;
+        let width = message_len + offset + 2;
         let border = "#".repeat(width);
 
         let pb = || println!("{border}");
@@ -66,7 +68,8 @@ fn handle_still_outage(tracker: DurationTracker) {
         pl("WARNING".into());
         pl("Still no internet connection".into());
         pe();
-        pl(format!("Connection lost since: {time}"));
+        pl(message_lost);
+        pl(message_elapsed);
         pe();
         pe();
         pb();
@@ -94,13 +97,21 @@ impl<'a> DurationTracker<'a> {
         })
     }
 
-    fn still_outage(&self) -> Option<String> {
+    fn still_outage(&self) -> Option<(String, String)> {
         self.0.first_offline().map(|r| {
-            r.timestamp
-                .with_timezone(&Local)
-                .format("%Y-%m-%d: %H:%M")
-                .to_string()
+            (
+                r.timestamp
+                    .with_timezone(&Local)
+                    .format("%Y-%m-%d: %H:%M")
+                    .to_string(),
+                DurationTracker::time_since(r.timestamp),
+            )
         })
+    }
+
+    fn time_since(timestamp: DateTime<Utc>) -> String {
+        let since = Utc::now() - timestamp;
+        since.humanize()
     }
 
     fn calculate_avg<I>(deltas: I) -> Option<TimeDelta>
