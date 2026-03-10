@@ -350,6 +350,7 @@ pub struct InternetCheckResult {
     speed: LatencySpeed,
     results: Vec<TargetResult>,
     avg: Duration,
+    cycle: InternetCheckCycle,
 }
 
 impl InternetCheckResult {
@@ -358,6 +359,7 @@ impl InternetCheckResult {
         speed: LatencySpeed,
         results: Vec<TargetResult>,
         avg: Duration,
+        cycle: InternetCheckCycle,
     ) -> InternetCheckResult {
         InternetCheckResult {
             timestamp: Utc::now(),
@@ -365,6 +367,7 @@ impl InternetCheckResult {
             speed,
             results,
             avg,
+            cycle,
         }
     }
 
@@ -375,4 +378,11 @@ impl InternetCheckResult {
     pub fn get_time(&self) -> String {
         self.timestamp.format("%d.%m.%y - %H:%M").to_string()
     }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub enum InternetCheckCycle {
+    Started,
+    Running,
+    Stopped,
 }

@@ -4,12 +4,17 @@ use anyhow::Result;
 use reqwest::Client;
 
 use crate::{
-    app::monitor::MonitorArgs, check::check_connection, log::Logger, model::Connectivity,
-    project::Project, runner::run_loop,
+    app::monitor::MonitorArgs,
+    check::check_connection,
+    log::Logger,
+    model::{Connectivity, InternetCheckCycle},
+    project::Project,
+    runner::run_loop,
 };
 
 pub const DEFAULT_MONITOR_INTERVAL: u64 = 5;
 pub const DEFAULT_MONITOR_TIMEOUT: u64 = 3;
+pub const DEFAULT_MONITOR_EXCLUDE_STOPPED: bool = false;
 
 pub async fn run(args: MonitorArgs, project: Project) -> Result<()> {
     let log_dir = match &args.logger.dir {
@@ -30,12 +35,24 @@ pub async fn run(args: MonitorArgs, project: Project) -> Result<()> {
         .build()?;
 
     run_loop(
-        client,
+        client.clone(),
         Arc::clone(&logger),
         Duration::from_secs(args.observer.interval),
         observe_connection,
         Some(async || {
-            log!(logger, "Graceful shutdown")?;
+            if args.observer.exclude_stopped {
+                log!(
+                    logger,
+                    "Graceful shutdown, finally connection check skipped"
+                )?;
+            } else {
+                let result = check_connection(client, None, InternetCheckCycle::Stopped).await;
+                log!(
+                    logger,
+                    "Graceful shutdown, perform final connection check",
+                    result
+                )?;
+            }
 
             Ok(())
         }),
@@ -50,7 +67,11 @@ async fn observe_connection(
     logger: Arc<Logger>,
     previous: Option<Connectivity>,
 ) -> Result<Connectivity> {
-    let result = check_connection(client.clone(), None).await;
+    let check_cycle = match previous {
+        Some(_) => InternetCheckCycle::Started,
+        None => InternetCheckCycle::Running,
+    };
+    let result = check_connection(client.clone(), None, check_cycle).await;
 
     match (previous, result.connectivity()) {
         (None, connectivity) => match connectivity {

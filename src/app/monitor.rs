@@ -4,7 +4,7 @@ use clap::Args;
 
 use crate::{
     log::{DEFAULT_FILE_PREFIX, DEFAULT_LOG_MODE, DEFAULT_MAX_SIZE, LogMode},
-    monitor::{DEFAULT_MONITOR_INTERVAL, DEFAULT_MONITOR_TIMEOUT},
+    monitor::{DEFAULT_MONITOR_EXCLUDE_STOPPED, DEFAULT_MONITOR_INTERVAL, DEFAULT_MONITOR_TIMEOUT},
 };
 
 #[derive(Args, Debug)]
@@ -53,4 +53,9 @@ pub struct ObserverArgs {
     /// Sets the timeout for the requests that check the internet connection.
     #[arg(short, long, default_value_t = DEFAULT_MONITOR_TIMEOUT)]
     pub timeout: u64,
+
+    /// Flag that disables the final connection check, if set. Otherwise, the tool will try to
+    /// perform a last check on graceful shutdown (CTRL-C).
+    #[arg(long, default_value_t = DEFAULT_MONITOR_EXCLUDE_STOPPED)]
+    pub exclude_stopped: bool,
 }

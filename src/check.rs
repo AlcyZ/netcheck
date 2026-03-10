@@ -7,12 +7,14 @@ use std::{
 use reqwest::Client;
 
 use crate::model::{
-    CheckError, CheckTarget, InternetCheckResult, Latency, LatencySpeed, TargetResult,
+    CheckError, CheckTarget, InternetCheckCycle, InternetCheckResult, Latency, LatencySpeed,
+    TargetResult,
 };
 
 pub async fn check_connection(
     client: Client,
     latency_threshold: Option<u128>,
+    check_cycle: InternetCheckCycle,
 ) -> InternetCheckResult {
     let (google, example, ip) = tokio::join!(
         check_target(CheckTarget::Google, client.clone(), latency_threshold),
@@ -26,7 +28,7 @@ pub async fn check_connection(
     let speed = LatencySpeed::new(&results.iter().collect::<Vec<_>>(), None);
     let avg = avg_durations(results.iter().map(|r| r.latency_duration()));
 
-    InternetCheckResult::new(internet_up.into(), speed, results, avg)
+    InternetCheckResult::new(internet_up.into(), speed, results, avg, check_cycle)
 }
 
 async fn check_target(
